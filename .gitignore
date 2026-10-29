@@ -1,0 +1,12 @@
+.DS_Store
+.env
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+build/
+*.xcodeproj/
+xcuserdata/
+*.xcuserstate
+# local pairing identity used by the Mac CLI
+.tvremote/

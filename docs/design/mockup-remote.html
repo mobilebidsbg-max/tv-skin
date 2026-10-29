@@ -1,0 +1,169 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--o:#D97757;--ui:-apple-system,"SF Pro Text",system-ui,Inter,sans-serif}
+.wrap{font-family:var(--font-sans,var(--ui));color:var(--foreground)}
+.wrap h2{margin:0 0 3px;font-size:17px;font-weight:650}
+.wrap p.sub{margin:0 0 14px;font-size:13px;line-height:1.45;color:var(--muted-foreground)}
+.phones{display:flex;gap:18px;justify-content:space-between;flex-wrap:wrap;margin-bottom:30px}
+.ph{flex:1 1 200px;max-width:236px;min-width:200px}
+.ph figcaption{font-size:12.5px;line-height:1.4;color:var(--muted-foreground);margin-top:8px}
+.ph figcaption b{color:var(--foreground);font-weight:600}
+.dev{position:relative;aspect-ratio:236/510;border-radius:40px;background:#000;box-shadow:0 0 0 2px #2a2a2c,0 0 0 7px #0c0c0d,0 24px 40px -18px rgba(0,0,0,.7);overflow:hidden;font-family:var(--ui);color:#f2f2f2}
+.dev *{box-sizing:border-box}
+.isl{position:absolute;left:50%;top:9px;width:30%;height:22px;border-radius:12px;background:#000;transform:translateX(-50%);box-shadow:0 0 0 1px #111;z-index:5}
+.sbar{position:absolute;left:22px;right:20px;top:12px;display:flex;justify-content:space-between;font-size:11px;font-weight:600}
+.hd{position:absolute;left:16px;right:14px;top:44px;display:flex;align-items:center;justify-content:space-between}
+.tv{font-size:15px;font-weight:650;letter-spacing:-.2px}
+.tv small{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;color:#8a8a8e;margin-top:2px}
+.tv small i{width:6px;height:6px;border-radius:50%;background:var(--o);box-shadow:0 0 6px var(--o)}
+.pw{width:32px;height:32px;border-radius:50%;background:#141414;display:grid;place-items:center;box-shadow:inset 0 0 0 1px #222}
+.pw svg{width:15px;height:15px;stroke:var(--o)}
+.pad{position:absolute;left:12px;right:12px;top:92px;height:59%;border-radius:28px;background:#070707;box-shadow:inset 0 0 0 1px #1a1a1a;overflow:hidden}
+.dots{position:absolute;inset:0;background:radial-gradient(circle,#2c2c2e 1.25px,transparent 1.6px) 7px 7px/14px 14px}
+.lit{position:absolute;inset:0;background:radial-gradient(circle,var(--o) 1.5px,transparent 1.9px) 7px 7px/14px 14px}
+.glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(217,119,87,.28),rgba(217,119,87,0) 70%);pointer-events:none}
+.phint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:10px;color:#4a4a4e;letter-spacing:.2px}
+.btns{position:absolute;left:18px;right:18px;bottom:44px;display:flex;justify-content:space-between}
+.b{width:44px;height:44px;border-radius:50%;background:#141414;display:grid;place-items:center;box-shadow:inset 0 0 0 1px #222}
+.b svg{width:19px;height:19px}
+.b.o svg{fill:var(--o);stroke:none}
+.grab{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:#5a5a5e}
+.grab i{width:34px;height:4px;border-radius:2px;background:#3a3a3c}
+svg.s{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.sheet{position:absolute;left:0;right:0;bottom:0;height:63%;border-radius:26px 26px 0 0;background:#0f0f0f;box-shadow:0 -1px 0 #222,0 -20px 40px rgba(0,0,0,.6);padding:10px 14px 0}
+.sheet .gr{width:34px;height:4px;border-radius:2px;background:#3a3a3c;margin:0 auto 10px}
+.tabs{display:flex;background:#1a1a1a;border-radius:10px;padding:2px;margin-bottom:16px}
+.tabs span{flex:1;text-align:center;font-size:10.5px;font-weight:600;color:#8a8a8e;padding:6px 0;border-radius:8px}
+.tabs span.on{background:#2c2c2e;color:#fff}
+.pb{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 16px}
+.pb .c{width:38px;height:38px;border-radius:50%;background:#1a1a1a;display:grid;place-items:center;font-size:9.5px;font-weight:700;position:relative}
+.pb .c svg{width:16px;height:16px}
+.pb .c.big{width:62px;height:62px;background:var(--o);box-shadow:0 8px 22px -8px rgba(217,119,87,.7)}
+.pb .c.big svg{width:24px;height:24px;fill:#140a06}
+.pb .c em{position:absolute;font-style:normal;font-size:8px;font-weight:700;bottom:-14px;color:#8a8a8e}
+.pills{display:flex;gap:8px;margin-bottom:12px}
+.pills span{flex:1;text-align:center;font-size:10.5px;font-weight:600;background:#1a1a1a;border-radius:10px;padding:9px 0}
+.gest{background:#141414;border-radius:14px;padding:10px 12px;box-shadow:inset 0 0 0 1px #1f1f1f}
+.gest h4{margin:0 0 7px;font-size:10px;font-weight:600;color:#8a8a8e;letter-spacing:.3px}
+.gest div{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;padding:2.5px 0;white-space:nowrap}
+.gest div b{font-weight:600}
+.gest div span{color:#8a8a8e}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px}
+.ap{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9px;color:#b0b0b4}
+.ap i{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:9.5px;letter-spacing:-.2px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.tvrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.tvrow span{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9px;color:#b0b0b4}
+.tvrow span i{width:44px;height:36px;border-radius:10px;background:#1a1a1a;display:grid;place-items:center}
+.tvrow span i svg{width:17px;height:17px}
+.icons{display:flex;gap:22px;flex-wrap:wrap}
+.ic{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ic .row{display:flex;align-items:flex-end;gap:12px}
+.ic svg.big{width:132px;height:132px;border-radius:30px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 16px 30px -14px rgba(0,0,0,.7)}
+.ic svg.sm{width:52px;height:52px;border-radius:12px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.ic figcaption{font-size:12.5px;line-height:1.4;color:var(--muted-foreground);max-width:200px}
+.ic figcaption b{color:var(--foreground);font-weight:600}
+</style></head><body><div class="wrap">
+<h2>The remote</h2>
+<p class="sub">Black, with orange only where your finger is and on play/pause. The main screen stays simple, and everything else sits in the sheet you pull up from the bottom.</p>
+<div class="phones">
+  <figure class="ph" style="margin:0">
+    <div class="dev">
+      <div class="isl"></div><div class="sbar"><span>21:30</span><span></span></div>
+      <div class="hd"><div class="tv">Living room TV<small><i></i>Connected</small></div><div class="pw"><svg class="s" viewBox="0 0 24 24"><path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/></svg></div></div>
+      <div class="pad" id="pad1"><div class="dots"></div><div class="lit" id="lit1"></div><div class="glow" id="glow1"></div><div class="phint">Swipe to move · Tap to select</div></div>
+      <div class="btns">
+        <span class="b"><svg class="s" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span>
+        <span class="b"><svg class="s" viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5M6.5 9.5V19h11V9.5"/></svg></span>
+        <span class="b o"><svg viewBox="0 0 24 24"><path d="M5 4.5v15L13.5 12zM15 5h2.4v14H15zM19.2 5h2.4v14h-2.4z"/></svg></span>
+        <span class="b"><svg class="s" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8"/></svg></span>
+      </div>
+      <div class="grab"><i></i>Controls</div>
+    </div>
+    <figcaption><b>Main screen.</b> The dots light up orange under your finger and leave a short trail as you swipe.</figcaption>
+  </figure>
+
+  <figure class="ph" style="margin:0">
+    <div class="dev">
+      <div class="isl"></div><div class="sbar"><span>21:30</span><span></span></div>
+      <div class="hd"><div class="tv">Living room TV<small><i></i>Connected</small></div><div class="pw"><svg class="s" viewBox="0 0 24 24"><path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/></svg></div></div>
+      <div class="pad"><div class="dots"></div></div>
+      <div class="dim"></div>
+      <div class="sheet">
+        <div class="gr"></div>
+        <div class="tabs"><span class="on">Playback</span><span>Volume</span><span>Apps</span><span>TV</span></div>
+        <div class="pb">
+          <span class="c"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6 5h2.2v14H6zM19 5.2v13.6L9.6 12z"/></svg></span>
+          <span class="c"><svg class="s" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4.5h4.5"/></svg><em>10 s</em></span>
+          <span class="c big"><svg viewBox="0 0 24 24"><path d="M6.5 4.5h3.8v15H6.5zM13.7 4.5h3.8v15h-3.8z"/></svg></span>
+          <span class="c"><svg class="s" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5"/></svg><em>10 s</em></span>
+          <span class="c"><svg viewBox="0 0 24 24" fill="#fff"><path d="M15.8 5H18v14h-2.2zM5 5.2v13.6L14.4 12z"/></svg></span>
+        </div>
+        <div class="pills"><span>Subtitles</span><span>Stop</span></div>
+        <div class="gest"><h4>GESTURES ON THE TOUCHPAD</h4>
+          <div><b>Two-finger tap</b><span>Play / pause</span></div>
+          <div><b>Two-finger swipe</b><span>±10 s</span></div>
+          <div><b>Right edge, slide</b><span>Volume</span></div>
+          <div><b>Press and hold</b><span>Hold OK</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Pulled up: Playback.</b> The big orange button is play/pause, with skip 10 s either side and a list of the shortcut gestures.</figcaption>
+  </figure>
+
+  <figure class="ph" style="margin:0">
+    <div class="dev">
+      <div class="isl"></div><div class="sbar"><span>21:30</span><span></span></div>
+      <div class="hd"><div class="tv">Living room TV<small><i></i>Connected</small></div><div class="pw"><svg class="s" viewBox="0 0 24 24"><path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/></svg></div></div>
+      <div class="pad"><div class="dots"></div></div>
+      <div class="dim"></div>
+      <div class="sheet">
+        <div class="gr"></div>
+        <div class="tabs"><span>Playback</span><span>Volume</span><span class="on">Apps</span><span>TV</span></div>
+        <div class="apps">
+          <span class="ap"><i style="background:#fff;color:#ff0033">▶</i>YouTube</span>
+          <span class="ap"><i style="background:#000;color:#e50914;font-size:15px">N</i>Netflix</span>
+          <span class="ap"><i style="background:#121212;color:#1ed760">Spotify</i>Spotify</span>
+          <span class="ap"><i style="background:#0b0b0d;color:#fff">tv</i>Apple TV</span>
+          <span class="ap"><i style="background:#0f171e;color:#fff">prime</i>Prime</span>
+          <span class="ap"><i style="background:linear-gradient(135deg,#002be7,#5b00e0);color:#fff">max</i>HBO Max</span>
+          <span class="ap"><i style="background:#9146ff;color:#fff">twitch</i>Twitch</span>
+          <span class="ap"><i style="background:#1a1a1a;color:#fff">G</i>Home</span>
+        </div>
+        <div class="tvrow">
+          <span><i><svg class="s" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></i>Input</span>
+          <span><i><svg class="s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg></i>Settings</span>
+          <span><i><svg class="s" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg></i>Search</span>
+          <span><i><svg class="s" viewBox="0 0 24 24" style="stroke:#D97757"><path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/></svg></i>Power</span>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Pulled up: Apps + TV.</b> Open any app on the TV with one tap. Input, settings, search and power sit below.</figcaption>
+  </figure>
+</div>
+
+<h2>App icon: three options</h2>
+<p class="sub">All black with one touch of Claude Code orange, built from the same dots as the touchpad.</p>
+<div class="icons" id="icons"></div>
+</div>
+<script>
+const O='#D97757';
+function grid(n,pad,fn){ let s=''; const step=(1024-2*pad)/(n-1);
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){ const x=pad+c*step,y=pad+r*step, d=fn(r,c,x,y); if(d) s+=d; } return s; }
+function svg(inner){ return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bgG" cx="50%" cy="28%" r="80%"><stop offset="0" stop-color="#151515"/><stop offset="1" stop-color="#000"/></radialGradient><radialGradient id="halo"><stop offset="0" stop-color="${O}" stop-opacity=".55"/><stop offset="1" stop-color="${O}" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" fill="url(#bgG)"/>${inner}</svg>`; }
+// A: touch point
+const A=svg(`<circle cx="626" cy="398" r="210" fill="url(#halo)"/>`+grid(5,232,(r,c,x,y)=>r===1&&c===3?`<circle cx="${x}" cy="${y}" r="58" fill="${O}"/>`:`<circle cx="${x}" cy="${y}" r="30" fill="#3a3a3c"/>`));
+// B: swipe trail
+const B=svg(`<circle cx="792" cy="512" r="200" fill="url(#halo)"/>`+grid(5,232,(r,c,x,y)=>{ if(r===2){ const a=[.0,.22,.45,.72,1][c]; if(c===0) return `<circle cx="${x}" cy="${y}" r="30" fill="#3a3a3c"/>`; return `<circle cx="${x}" cy="${y}" r="${30+c*7}" fill="${O}" fill-opacity="${a}"/>`; } return `<circle cx="${x}" cy="${y}" r="30" fill="#3a3a3c"/>`; }));
+// C: ripple
+const C=svg(`<circle cx="512" cy="512" r="250" fill="url(#halo)"/>`+grid(9,152,(r,c,x,y)=>{ const d=Math.hypot(x-512,y-512), t=Math.max(0,1-d/360);
+  return t>0.02?`<circle cx="${x}" cy="${y}" r="${14+16*t}" fill="${O}" fill-opacity="${(0.15+0.85*t*t).toFixed(2)}"/>`:`<circle cx="${x}" cy="${y}" r="14" fill="#2c2c2e"/>`; }));
+const ICONS=[['A','Touch point','One lit dot on a quiet grid: your finger on the touchpad.',A],['B','Swipe','A trail of dots getting brighter: a swipe in motion.',B],['C','Ripple','Dots glowing out from the centre, like the touchpad when you press.',C]];
+document.getElementById('icons').innerHTML=ICONS.map(([k,n,d,s])=>`<figure class="ic" style="margin:0"><div class="row">${s.replace('<svg','<svg class="big"')}${s.replace('<svg','<svg class="sm"')}</div><figcaption><b>${k} · ${n}.</b> ${d}</figcaption></figure>`).join('');
+// lit dots trail on phone 1 (mask the orange layer around a swipe path)
+const lit=document.getElementById('lit1'), g=document.getElementById('glow1');
+const pts=[[30,62,.25],[40,58,.45],[50,54,.7],[60,50,1]];
+const m=pts.map(([x,y,a])=>`radial-gradient(circle at ${x}% ${y}%, rgba(0,0,0,${a}) 0, rgba(0,0,0,${a*.6}) 16px, transparent ${18+a*26}px)`).join(',');
+lit.style.webkitMaskImage=m; lit.style.maskImage=m;
+Object.assign(g.style,{left:'calc(60% - 60px)',top:'calc(50% - 60px)',width:'120px',height:'120px'});
+</script>
+</body></html>
