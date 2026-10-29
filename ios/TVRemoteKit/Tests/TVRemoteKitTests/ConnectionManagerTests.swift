@@ -24,7 +24,7 @@ final class ConnectionManagerTests: XCTestCase {
         clock = FakeClock()
         clock.log = log
         let clock = clock!
-        return ConnectionManager(link: link, store: store, sleep: { await clock.sleep($0) })
+        return ConnectionManager(link: link, store: store, sleep: { await clock.sleep($0) }, now: { clock.now })
     }
 
     /// An active manager whose session to the known TV is up, and that session.
@@ -192,6 +192,57 @@ final class ConnectionManagerTests: XCTestCase {
         await waitUntil { self.link.channels.count == 2 && manager.state == .connected(tvOn: true) }
         XCTAssertEqual(clock.delays, [1])
         XCTAssertNil(manager.volume)
+    }
+
+    func testASessionThatDropsSoonAfterOpeningGrowsTheBackoff() async throws {
+        let (manager, first) = try await makeConnectedManager()
+
+        first.emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 2 && manager.state == .connected(tvOn: true) }
+        link.channels[1].emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 3 && manager.state == .connected(tvOn: true) }
+        link.channels[2].emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 4 && manager.state == .connected(tvOn: true) }
+
+        XCTAssertEqual(clock.delays, [1, 2, 4])
+    }
+
+    func testFailedAttemptsBetweenShortSessionsKeepGrowingTheBackoff() async throws {
+        let (manager, first) = try await makeConnectedManager()
+        link.openResults = [.failure(.unreachable)]
+
+        first.emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 2 && manager.state == .connected(tvOn: true) }
+        link.channels[1].emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 3 && manager.state == .connected(tvOn: true) }
+
+        // Drop (1), unreachable (2), session up, drop again: 4.
+        XCTAssertEqual(clock.delays, [1, 2, 4])
+    }
+
+    func testASessionThatStayedUpTenSecondsResetsTheBackoff() async throws {
+        let (manager, first) = try await makeConnectedManager()
+        first.emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 2 && manager.state == .connected(tvOn: true) }
+        link.channels[1].emit(.closed(.closed))
+        await waitUntil { self.link.channels.count == 3 && manager.state == .connected(tvOn: true) }
+
+        clock.advance(10)
+        link.channels[2].emit(.closed(.timeout))
+        await waitUntil { self.link.channels.count == 4 && manager.state == .connected(tvOn: true) }
+
+        XCTAssertEqual(clock.delays, [1, 2, 1])
+    }
+
+    func testLocalNetworkDeniedIsIgnoredWhileConnected() async throws {
+        let (manager, channel) = try await makeConnectedManager()
+
+        manager.localNetworkDenied()
+
+        XCTAssertEqual(manager.state, .connected(tvOn: true))
+        XCTAssertFalse(channel.closed)
+        await settle()
+        XCTAssertEqual(link.openedHosts.count, 1)
     }
 
     func testLocalNetworkDeniedStopsRetrying() async {
@@ -714,18 +765,25 @@ final class Timeline {
     }
 }
 
-/// Records the manager's waits. Normally they end at once; while `holds` is set a wait lasts until the
-/// manager cancels it, so a test can act in the middle of a backoff.
+/// Records the manager's waits and keeps its time. Normally a wait ends at once and moves `now` on by its
+/// length; while `holds` is set a wait lasts until the manager cancels it, so a test can act in the middle of
+/// a backoff.
 @MainActor
 final class FakeClock {
     private(set) var delays: [TimeInterval] = []
+    private(set) var now: TimeInterval = 0
     var holds = false
     var log: Timeline?
 
     func sleep(_ delay: TimeInterval) async {
         delays.append(delay)
+        now += delay
         log?.append("sleep \(delay)")
         if holds { try? await Task.sleep(for: .seconds(3600)) }
+    }
+
+    func advance(_ seconds: TimeInterval) {
+        now += seconds
     }
 }
 

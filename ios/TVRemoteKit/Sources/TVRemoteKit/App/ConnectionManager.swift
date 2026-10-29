@@ -18,9 +18,9 @@ public struct VolumeInfo: Equatable {
 ///
 /// The app reports its lifecycle through `appBecameActive` and `appWentBackground`. While it is active the manager
 /// keeps one remote session open. When the TV can't be reached it tries again after 1, 2, 4 and 8 s, then every
-/// 10 s. It stops trying when the TV no longer knows this device (`.needsPairing`, once a second attempt 1 s later
-/// confirms it) or iOS blocks the local network (`.localNetworkDenied`). Commands sent while no session is open are
-/// dropped.
+/// 10 s; a session that ends within 10 s of opening counts as one more failed attempt. It stops trying when the TV
+/// no longer knows this device (`.needsPairing`, once a second attempt 1 s later confirms it) or iOS blocks the
+/// local network (`.localNetworkDenied`). Commands sent while no session is open are dropped.
 @MainActor
 @Observable
 public final class ConnectionManager {
@@ -60,6 +60,8 @@ public final class ConnectionManager {
     static let wakeDelay: TimeInterval = 3
     /// The wait before checking a rejected certificate once more.
     static let notPairedRecheckDelay: TimeInterval = 1
+    /// A session that stays up this long resets the backoff; one that ends sooner counts as a failed attempt.
+    static let stableSessionDuration: TimeInterval = 10
 
     public private(set) var state: State
     public private(set) var tv: PairedTV?
@@ -74,6 +76,7 @@ public final class ConnectionManager {
     private let link: TVLinking
     private let store: PairedTVStore
     private let wait: (TimeInterval) async -> Void
+    private let now: @MainActor () -> TimeInterval
     @ObservationIgnored private var isActive = false
     @ObservationIgnored private var channel: RemoteChannel?
     @ObservationIgnored private var eventsTask: Task<Void, Never>?
@@ -82,16 +85,22 @@ public final class ConnectionManager {
     @ObservationIgnored private var pairingTV: PairedTV?
     /// Power sent Wake-on-LAN while connecting; if the attempt under way fails, the next wait is `wakeDelay`.
     @ObservationIgnored private var wokeWhileConnecting = false
+    /// When the open session started, and the failures counted before it.
+    @ObservationIgnored private var sessionStart: (time: TimeInterval, failures: Int) = (0, 0)
 
-    /// - Parameter sleep: waits the given number of seconds; tests pass a fake.
+    /// - Parameters:
+    ///   - sleep: waits the given number of seconds; tests pass a fake.
+    ///   - now: the time in seconds, only ever compared with itself; tests pass a fake.
     public init(
         link: TVLinking,
         store: PairedTVStore,
-        sleep: @escaping (TimeInterval) async -> Void = { try? await Task.sleep(for: .seconds($0)) }
+        sleep: @escaping (TimeInterval) async -> Void = { try? await Task.sleep(for: .seconds($0)) },
+        now: @escaping @MainActor () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) {
         self.link = link
         self.store = store
         wait = sleep
+        self.now = now
         let tv = store.load()
         self.tv = tv
         state = tv == nil ? .noTV : .connecting
@@ -254,7 +263,9 @@ public final class ConnectionManager {
     }
 
     /// iOS blocks the local network (discovery found out): stop everything until the app is active again.
+    /// Ignored while a session is open, which shows the local network works.
     public func localNetworkDenied() {
+        guard channel == nil else { return }
         endPairing()
         stopConnecting()
         closeChannel()
@@ -335,6 +346,7 @@ public final class ConnectionManager {
             }
             connectTask = nil
             wokeWhileConnecting = false
+            sessionStart = (now(), failures)
             adopt(channel)
             return
         }
@@ -375,7 +387,9 @@ public final class ConnectionManager {
         }
     }
 
-    /// The TV or the network ended the session: start over, waiting 1 s before the first attempt.
+    /// The TV or the network ended the session: start over. After a session that stayed up for
+    /// `stableSessionDuration` the backoff starts again at 1 s; a shorter one counts as one more failure, so a TV
+    /// that keeps dropping sessions right after they open is retried less and less often.
     private func sessionEnded(_ channel: RemoteChannel) {
         guard channel === self.channel else { return }
         self.channel = nil
@@ -383,7 +397,9 @@ public final class ConnectionManager {
         volume = nil
         canType = false
         if isActive {
-            startConnecting(after: Self.retryDelays[0], failures: 1)
+            let wasStable = now() - sessionStart.time >= Self.stableSessionDuration
+            let failures = wasStable ? 0 : sessionStart.failures
+            startConnecting(after: Self.retryDelays[min(failures, Self.retryDelays.count - 1)], failures: failures + 1)
         } else {
             state = .connecting
         }
