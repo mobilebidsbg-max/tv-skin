@@ -14,6 +14,7 @@ public final class TLSChannel {
 
     /// Inbound message payloads in arrival order. It never finishes normally: when the connection ends it
     /// throws a `TVLinkError` (`.closed` after `close()`, `.notPaired` when the remote port rejects this device).
+    /// Cancelling the task that reads it closes the connection.
     public let messages: AsyncThrowingStream<[UInt8], Error>
 
     private let channel: Channel
@@ -36,6 +37,18 @@ public final class TLSChannel {
         identity: ClientIdentity,
         timeout: TimeInterval = 5
     ) async throws -> TLSChannel {
+        try await connect(host: host, port: port, identity: identity, timeout: timeout, errorPort: port)
+    }
+
+    /// - Parameter errorPort: the TV port whose rules `TVLinkError.map` applies, normally `port`.
+    ///   `RemoteSession` passes `remotePort` so a fake TV on another port gets the same mapping (`.notPaired`).
+    static func connect(
+        host: String,
+        port: Int,
+        identity: ClientIdentity,
+        timeout: TimeInterval,
+        errorPort: Int
+    ) async throws -> TLSChannel {
         let sslContext: NIOSSLContext
         do {
             sslContext = try NIOSSLContext(configuration: tlsConfiguration(for: identity))
@@ -55,10 +68,18 @@ public final class TLSChannel {
                 .connect(host: host, port: port)
                 .get()
         } catch {
-            let mapped = TVLinkError.map(error, port: port)
+            let mapped = TVLinkError.map(error, port: errorPort)
             handshake.fail(mapped)
             continuation.finish(throwing: mapped)
             throw mapped
+        }
+
+        // When the consumer goes away (its task is cancelled or the stream is dropped), close the socket.
+        // A normal end needs nothing: the handler that finishes the stream also closes the channel.
+        continuation.onTermination = { termination in
+            if case .cancelled = termination {
+                channel.pipeline.fireErrorCaught(TVLinkError.closed)
+            }
         }
 
         // Handlers go in after connect so only the connection that won (Happy Eyeballs may try several)
@@ -67,11 +88,11 @@ public final class TLSChannel {
             try await loop.submit {
                 let pipeline = channel.pipeline.syncOperations
                 try pipeline.addHandler(NIOSSLClientHandler(context: sslContext, serverHostname: nil))
-                try pipeline.addHandler(MessageHandler(port: port, messages: continuation, handshake: handshake))
+                try pipeline.addHandler(MessageHandler(port: errorPort, messages: continuation, handshake: handshake))
             }.get()
         } catch {
             channel.close(promise: nil)
-            let mapped = TVLinkError.map(error, port: port)
+            let mapped = TVLinkError.map(error, port: errorPort)
             handshake.fail(mapped)
             continuation.finish(throwing: mapped)
             throw mapped

@@ -47,7 +47,8 @@ public enum TVLinkError: Error, Equatable {
             case ECONNRESET, EPIPE:
                 return onRemotePort ? .notPaired : .closed
             default:
-                return .protocolError(String(describing: error))
+                // Any other socket failure (ECONNABORTED, ENOTCONN, …) is a dropped connection, not bad data.
+                return .closed
             }
         case NIOSSLError.handshakeFailed, is BoringSSLError:
             // Under TLS 1.3 a rejected client certificate arrives as an alert after the handshake (BoringSSLError).
