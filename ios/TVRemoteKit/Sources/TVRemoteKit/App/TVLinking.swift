@@ -34,33 +34,79 @@ public struct LiveLink: TVLinking {
     private let identityStore: IdentityStore
     private let clientName: String
 
-    /// - Parameter clientName: how this device is named on the TV while pairing (the app passes the device name).
+    /// How many times a wake sends the magic packet, and the wait between them: a single UDP packet is easily lost.
+    static let wakeRepeats = 3
+    static let wakeInterval: TimeInterval = 0.1
+
+    /// - Parameter clientName: how this device is named on the TV while pairing.
     public init(identityStore: IdentityStore, clientName: String) {
         self.identityStore = identityStore
         self.clientName = clientName
     }
 
     public func openRemote(host: String) async throws -> RemoteChannel {
-        try await RemoteSession.open(host: host, identity: try identityStore.loadOrCreate())
+        try await RemoteSession.open(host: host, identity: try Self.identity(from: identityStore))
     }
 
     public func pairing(host: String) -> PairingChannel {
         LivePairing(host: host, identityStore: identityStore, clientName: clientName)
     }
 
-    /// Sends the magic packet straight to `host`, then also broadcasts it.
+    /// Sends the magic packet 3 times, 100 ms apart, each time straight to `host` and then as a broadcast.
     ///
     /// On iPhone, broadcasting needs Apple's multicast entitlement, which a free Apple ID can't get, so the
-    /// broadcast usually fails there and that failure is ignored. Errors from the unicast send are thrown.
+    /// broadcast usually fails there and that failure is ignored. If every unicast send failed, the last error is
+    /// thrown.
     public func wake(mac: String, host: String) async throws {
+        try await Self.wake(mac: mac, host: host, port: WakeOnLAN.port, broadcast: true)
+    }
+
+    /// `wake(mac:host:)` with the unicast port injectable and the broadcast optional, for tests.
+    static func wake(mac: String, host: String, port: UInt16, broadcast: Bool) async throws {
         var unicastError: Error?
-        do {
-            try await WakeOnLAN.send(mac: mac, to: host)
-        } catch {
-            unicastError = error
+        var unicastSent = false
+        var broadcastError: Error?
+        for round in 0..<wakeRepeats {
+            if round > 0 { try? await Task.sleep(for: .seconds(wakeInterval)) }
+            do {
+                try await WakeOnLAN.send(mac: mac, to: host, port: port)
+                unicastSent = true
+            } catch {
+                unicastError = error
+            }
+            guard broadcast else { continue }
+            do {
+                try await WakeOnLAN.send(mac: mac)
+            } catch {
+                broadcastError = error
+            }
         }
-        try? await WakeOnLAN.send(mac: mac)
-        if let unicastError { throw unicastError }
+        if let broadcastError {
+            Log.link.info("Wake-on-LAN broadcast failed (expected on iPhone): \(String(describing: broadcastError), privacy: .public)")
+        }
+        if let unicastError, !unicastSent {
+            Log.link.error("Wake-on-LAN to \(host, privacy: .public) failed: \(String(describing: unicastError), privacy: .public)")
+            throw unicastError
+        }
+        Log.link.info("Wake-on-LAN sent to \(host, privacy: .public)")
+    }
+
+    /// This device's identity: the saved one, or on first use a new one (an RSA key and certificate) that is saved.
+    /// Logs which, and any failure.
+    static func identity(from store: IdentityStore) throws -> ClientIdentity {
+        do {
+            if let saved = try store.load() {
+                Log.link.debug("Loaded the client identity")
+                return saved
+            }
+            let created = try ClientIdentity.generate()
+            try store.save(created)
+            Log.link.notice("Created and saved a new client identity")
+            return created
+        } catch {
+            Log.link.error("Client identity failed: \(String(describing: error), privacy: .public)")
+            throw error
+        }
     }
 }
 
@@ -83,7 +129,7 @@ private final class LivePairing: PairingChannel {
 
     /// - Throws: `.closed` if cancelled first, an `IdentityStore` error, or what `PairingSession.start` throws.
     func start() async throws {
-        let session = PairingSession(host: host, identity: try identityStore.loadOrCreate(), clientName: clientName)
+        let session = PairingSession(host: host, identity: try LiveLink.identity(from: identityStore), clientName: clientName)
         let adopted = lock.withLock { () -> Bool in
             guard !cancelled else { return false }
             self.session = session

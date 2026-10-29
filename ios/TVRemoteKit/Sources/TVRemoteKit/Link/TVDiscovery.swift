@@ -105,6 +105,7 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
     // MARK: - Browsing
 
     private func browserStateChanged(_ state: NWBrowser.State) {
+        Log.discovery.info("Browser \(String(describing: state), privacy: .public)")
         switch state {
         case .waiting(let error), .failed(let error):
             if Self.isPolicyDenied(error) { reportDenial() }
@@ -138,6 +139,7 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
     private func reportDenial() {
         guard !stopped, !denialReported else { return }
         denialReported = true
+        Log.discovery.error("iOS denies local network access")
         onPolicyDenied?()
     }
 
@@ -160,6 +162,9 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
             case .ready:
                 self.resolved(name, by: connection, attempt: attempt)
             case .waiting(let error), .failed(let error):
+                Log.discovery.debug("""
+                    Resolving \(name, privacy: .public) (attempt \(attempt + 1)): \(String(describing: state), privacy: .public)
+                    """)
                 if Self.isPolicyDenied(error) { self.reportDenial() }
                 if case .failed = state { self.retry(name, after: connection, attempt: attempt) }
             case .setup, .preparing, .cancelled:
@@ -186,6 +191,7 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
         }
         services[name]?.host = Self.hostString(host)
         services[name]?.connection = nil
+        Log.discovery.info("Found \(name, privacy: .public) at \(Self.hostString(host), privacy: .public)")
         publish()
     }
 
@@ -194,7 +200,10 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
         guard services[name]?.connection === connection else { return }
         connection.cancel()
         services[name]?.connection = nil
-        guard attempt + 1 < Self.maxAttempts else { return }
+        guard attempt + 1 < Self.maxAttempts else {
+            Log.discovery.notice("Gave up resolving \(name, privacy: .public) after \(Self.maxAttempts) attempts")
+            return
+        }
         queue.asyncAfter(deadline: .now() + Self.retryDelay) { [weak self] in
             self?.resolve(name, attempt: attempt + 1)
         }

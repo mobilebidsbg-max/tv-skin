@@ -273,6 +273,7 @@ public final class ConnectionManager {
         case .noTV, .connected, .needsPairing, .pairing, .localNetworkDenied:
             return
         }
+        Log.connection.notice("\(tv.name, privacy: .public) moved from \(tv.host, privacy: .public) to \(host, privacy: .public)")
         tv.host = host
         self.tv = tv
         store.save(tv)
@@ -285,6 +286,7 @@ public final class ConnectionManager {
     /// Ignored while a session is open, which shows the local network works.
     public func localNetworkDenied() {
         guard channel == nil else { return }
+        Log.connection.error("Local network access is denied")
         endPairing()
         stopConnecting()
         closeChannel()
@@ -328,7 +330,12 @@ public final class ConnectionManager {
                 channel = try await link.openRemote(host: host)
             } catch {
                 guard !Task.isCancelled else { return }
-                switch TVLinkError.map(error, port: TLSChannel.remotePort) {
+                let mapped = TVLinkError.map(error, port: TLSChannel.remotePort)
+                Log.connection.error("""
+                    Opening a session with \(host, privacy: .public) failed: \(String(describing: error), privacy: .public) \
+                    (\(String(describing: mapped), privacy: .public))
+                    """)
+                switch mapped {
                 case .notPaired where !rejected:
                     // A TV in the middle of starting up can fail a handshake too: check once more before asking
                     // the user to pair again. The state stays `.connecting`.
@@ -336,6 +343,7 @@ public final class ConnectionManager {
                     delay = Self.notPairedRecheckDelay
                     continue
                 case .notPaired:
+                    Log.connection.notice("The TV rejected this device twice in a row: pair again")
                     connectTask = nil
                     state = .needsPairing
                     return
@@ -366,6 +374,7 @@ public final class ConnectionManager {
             connectTask = nil
             wokeWhileConnecting = false
             sessionStart = (now(), failures)
+            Log.connection.info("Session open with \(host, privacy: .public)")
             adopt(channel)
             return
         }
@@ -401,7 +410,8 @@ public final class ConnectionManager {
             canType = available
         case .currentApp:
             break
-        case .closed:
+        case .closed(let reason):
+            Log.connection.info("Session ended: \(String(describing: reason), privacy: .public)")
             sessionEnded(channel)
         }
     }
@@ -445,6 +455,9 @@ public final class ConnectionManager {
     private func pairingFailed(_ error: Error) {
         endPairing()
         let linkError = TVLinkError.map(error, port: TLSChannel.pairingPort)
+        Log.connection.error("""
+            Pairing failed: \(String(describing: error), privacy: .public) (\(String(describing: linkError), privacy: .public))
+            """)
         state = linkError == .localNetworkDenied ? .localNetworkDenied : .pairing(.failed(Self.message(for: linkError)))
     }
 

@@ -69,6 +69,10 @@ public final class TLSChannel {
                 .get()
         } catch {
             let mapped = TVLinkError.map(error, port: errorPort)
+            Log.link.error("""
+                Connecting to \(host, privacy: .public):\(port) failed: \(String(describing: error), privacy: .public) \
+                (\(String(describing: mapped), privacy: .public))
+                """)
             handshake.fail(mapped)
             continuation.finish(throwing: mapped)
             throw mapped
@@ -236,8 +240,16 @@ private final class MessageHandler: ChannelDuplexHandler {
         messages.finish(throwing: error)
     }
 
+    /// Maps `error`, logging the first low-level error (the cause the app's own errors hide).
     private func mapped(_ error: Error) -> TVLinkError {
-        TVLinkError.map(error, port: port, afterMessage: receivedMessage)
+        let mapped = TVLinkError.map(error, port: port, afterMessage: receivedMessage)
+        if !ended, !(error is TVLinkError) {
+            Log.link.notice("""
+                Connection on port \(self.port) ended: \(String(describing: error), privacy: .public) \
+                (\(String(describing: mapped), privacy: .public))
+                """)
+        }
+        return mapped
     }
 }
 

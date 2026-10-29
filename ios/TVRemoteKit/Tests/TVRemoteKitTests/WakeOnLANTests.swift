@@ -35,6 +35,36 @@ final class WakeOnLANTests: XCTestCase {
         XCTAssertEqual(try receiver.receive(), try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b"))
     }
 
+    /// The app's wake: the packet goes out three times, about 100 ms apart. (A made-up MAC, and no broadcast, so
+    /// nothing on the real network can wake.)
+    func testLiveWakeSendsThePacketThreeTimesAbout100msApart() async throws {
+        let receiver = try UDPReceiver()
+        defer { receiver.close() }
+        let mac = "02:00:00:00:00:01"
+        let start = Date()
+
+        try await LiveLink.wake(mac: mac, host: "127.0.0.1", port: receiver.port, broadcast: false)
+
+        let elapsed = Date().timeIntervalSince(start)
+        let packet = try WakeOnLAN.packet(mac: mac)
+        XCTAssertEqual(try receiver.receive(), packet)
+        XCTAssertEqual(try receiver.receive(), packet)
+        XCTAssertEqual(try receiver.receive(), packet)
+        XCTAssertGreaterThanOrEqual(elapsed, 0.19)
+        XCTAssertLessThan(elapsed, 1)
+    }
+
+    func testLiveWakeThrowsTheUnicastErrorAfterTryingEachTime() async {
+        let start = Date()
+        do {
+            try await LiveLink.wake(mac: "02:00:00:00:00:01", host: "tv.local", port: 9, broadcast: false)
+            XCTFail("expected invalidHost")
+        } catch {
+            XCTAssertEqual(error as? WakeOnLANError, .invalidHost("tv.local"))
+        }
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 0.19)
+    }
+
     func testUnicastRejectsAHostThatIsNotAnIPv4Address() async {
         do {
             try await WakeOnLAN.send(mac: "44:0f:b4:88:a4:9b", to: "tv.local")
