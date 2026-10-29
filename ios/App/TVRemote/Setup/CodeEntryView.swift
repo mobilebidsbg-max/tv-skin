@@ -11,7 +11,7 @@ struct CodeEntryView: View {
     let retry: (DiscoveredTV) -> Void
     let chooseAnother: () -> Void
 
-    @State private var code = ""
+    @State private var input = PairingCodeEntry()
     @State private var shakes: CGFloat = 0
     @FocusState private var isFocused: Bool
 
@@ -20,9 +20,8 @@ struct CodeEntryView: View {
         return nil
     }
 
-    /// Whether typed characters count: the TV is showing a code and no check is under way.
     private var isAccepting: Bool {
-        step == .enterCode || step == .wrongCode
+        PairingCodeEntry.accepts(step)
     }
 
     var body: some View {
@@ -37,22 +36,17 @@ struct CodeEntryView: View {
         .padding(.horizontal, 24)
         .padding(.top, 40)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onChange(of: code) { _, new in
-            let clean = PairingCode.sanitize(new)
-            guard clean == new else {
-                code = clean
-                return
-            }
-            if isAccepting, let valid = PairingCode.normalize(clean) {
-                Task { await connection.submitCode(valid) }
+        .onChange(of: input.text) {
+            if let code = input.textChanged(during: step) {
+                Task { await connection.submitCode(code) }
             }
         }
         .onChange(of: step) { _, new in
+            input.pairingStepChanged(to: new)
             switch new {
             case .enterCode:
                 isFocused = true
             case .wrongCode:
-                code = ""
                 isFocused = true
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
                 withAnimation(.easeOut(duration: 0.4)) { shakes += 1 }
@@ -94,7 +88,7 @@ struct CodeEntryView: View {
             ForEach(0..<6, id: \.self) { index in
                 CodeBox(
                     character: character(at: index),
-                    isCurrent: isAccepting && index == min(code.count, 5) && code.count < 6
+                    isCurrent: isAccepting && index == input.text.count && input.text.count < 6
                 )
             }
         }
@@ -102,7 +96,7 @@ struct CodeEntryView: View {
         .modifier(Shake(shakes: shakes))
         .accessibilityHidden(true)
         .overlay {
-            TextField("Code from the TV", text: $code)
+            TextField("Code from the TV", text: $input.text)
                 .focused($isFocused)
                 .keyboardType(.asciiCapable)
                 .textInputAutocapitalization(.characters)
@@ -115,14 +109,15 @@ struct CodeEntryView: View {
         .contextMenu {
             if isAccepting {
                 Button("Paste", systemImage: "doc.on.clipboard") {
-                    code = PairingCode.sanitize(UIPasteboard.general.string ?? "")
+                    input.text = UIPasteboard.general.string ?? ""
                 }
             }
         }
     }
 
     private func character(at index: Int) -> Character? {
-        index < code.count ? code[code.index(code.startIndex, offsetBy: index)] : nil
+        let text = input.text
+        return index < text.count ? text[text.index(text.startIndex, offsetBy: index)] : nil
     }
 
     /// One line under the boxes, always the same height so nothing jumps.

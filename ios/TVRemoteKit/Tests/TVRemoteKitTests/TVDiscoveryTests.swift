@@ -33,6 +33,35 @@ final class TVDiscoveryTests: XCTestCase {
         ])
     }
 
+    func testEveryAttemptButTheLastRequiresIPv4() {
+        let last = TVDiscovery.maxAttempts - 1
+        for attempt in 0..<last {
+            XCTAssertTrue(TVDiscovery.ipv4Only(attempt: attempt), "attempt \(attempt)")
+        }
+        XCTAssertFalse(TVDiscovery.ipv4Only(attempt: last))
+    }
+
+    func testAnIPv4AddressIsAcceptedOnEveryAttempt() throws {
+        let host = NWEndpoint.Host.ipv4(try XCTUnwrap(IPv4Address("192.168.8.16")))
+        for attempt in 0..<TVDiscovery.maxAttempts {
+            XCTAssertTrue(TVDiscovery.accepts(host, attempt: attempt), "attempt \(attempt)")
+        }
+    }
+
+    func testOtherAddressesAreIgnoredUntilTheLastAttempt() throws {
+        let hosts: [NWEndpoint.Host] = [
+            .ipv6(try XCTUnwrap(IPv6Address("fe80::1"))),
+            .name("tv.local", nil),
+        ]
+        let last = TVDiscovery.maxAttempts - 1
+        for host in hosts {
+            for attempt in 0..<last {
+                XCTAssertFalse(TVDiscovery.accepts(host, attempt: attempt), "\(host) attempt \(attempt)")
+            }
+            XCTAssertTrue(TVDiscovery.accepts(host, attempt: last), "\(host)")
+        }
+    }
+
     func testStopEndsTheResultsStream() async {
         let discovery = TVDiscovery()
         discovery.stop()

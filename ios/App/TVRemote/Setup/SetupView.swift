@@ -86,11 +86,11 @@ struct SetupView: View {
             )
             .font(.system(size: 17).monospacedDigit())
             .foregroundStyle(Theme.text)
-            .keyboardType(.decimalPad)
+            .keyboardType(.numbersAndPunctuation)
             .autocorrectionDisabled()
             .padding(.leading, 14)
             .onChange(of: address) { _, new in
-                let clean = String(new.filter { $0.isASCII && ($0.isNumber || $0 == ".") }.prefix(15))
+                let clean = HostAddress.sanitize(new)
                 if clean != new { address = clean }
             }
             Button("Connect") { pair(manualTV) }

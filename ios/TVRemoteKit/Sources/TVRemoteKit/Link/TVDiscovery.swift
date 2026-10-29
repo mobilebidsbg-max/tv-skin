@@ -28,8 +28,8 @@ public protocol TVFinding: AnyObject {
 
 /// Finds Google TVs that advertise `_androidtvremote2._tcp` on the local network (Bonjour).
 ///
-/// Each TV found is resolved to its IP address by opening a short connection to it. A discovery works once:
-/// after `stop()` it stays finished.
+/// Each TV found is resolved to its IP address by opening a short connection to it. The address is IPv4
+/// unless that fails on every attempt. A discovery works once: after `stop()` it stays finished.
 public final class TVDiscovery: TVFinding, @unchecked Sendable {
     public static let serviceType = "_androidtvremote2._tcp"
 
@@ -39,7 +39,7 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
     /// that answers slowly is often answered at once by a fresh attempt, so attempts are short.
     private static let resolveTimeout: TimeInterval = 2
     private static let retryDelay: TimeInterval = 0.5
-    private static let maxAttempts = 6
+    static let maxAttempts = 6
 
     public let results: AsyncStream<[DiscoveredTV]>
 
@@ -147,8 +147,8 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
     private func resolve(_ name: String, attempt: Int) {
         guard !stopped, let service = services[name], service.host == nil else { return }
         let parameters = NWParameters.tcp
-        // The remote protocol is used over IPv4, so that comes first; every other attempt takes any address.
-        if attempt.isMultiple(of: 2), let ip = parameters.defaultProtocolStack.internetProtocol as? NWProtocolIP.Options {
+        if Self.ipv4Only(attempt: attempt),
+           let ip = parameters.defaultProtocolStack.internetProtocol as? NWProtocolIP.Options {
             ip.version = .v4
         }
         let connection = NWConnection(to: service.endpoint, using: parameters)
@@ -158,7 +158,7 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
             guard let self, let connection else { return }
             switch state {
             case .ready:
-                self.resolved(name, by: connection)
+                self.resolved(name, by: connection, attempt: attempt)
             case .waiting(let error), .failed(let error):
                 if Self.isPolicyDenied(error) { self.reportDenial() }
                 if case .failed = state { self.retry(name, after: connection, attempt: attempt) }
@@ -175,11 +175,15 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
         }
     }
 
-    private func resolved(_ name: String, by connection: NWConnection) {
+    private func resolved(_ name: String, by connection: NWConnection, attempt: Int) {
         defer { connection.cancel() }
         guard services[name]?.connection === connection,
               case .hostPort(let host, _)? = connection.currentPath?.remoteEndpoint
         else { return }
+        guard Self.accepts(host, attempt: attempt) else {
+            retry(name, after: connection, attempt: attempt)
+            return
+        }
         services[name]?.host = Self.hostString(host)
         services[name]?.connection = nil
         publish()
@@ -204,6 +208,20 @@ public final class TVDiscovery: TVFinding, @unchecked Sendable {
     }
 
     // MARK: - Pure helpers
+
+    /// Whether an attempt asks for IPv4 only. Everything the app does with a TV (its saved address, the MAC
+    /// address that goes with it) is keyed by its IPv4 address, so only the last attempt, the one that keeps a
+    /// TV reachable by IPv6 alone from vanishing, takes any address.
+    static func ipv4Only(attempt: Int) -> Bool {
+        attempt < maxAttempts - 1
+    }
+
+    /// Whether `host` may be taken as the TV's address on this attempt: an IPv4 address always, anything else
+    /// only on the last attempt.
+    static func accepts(_ host: NWEndpoint.Host, attempt: Int) -> Bool {
+        if case .ipv4 = host { return true }
+        return !ipv4Only(attempt: attempt)
+    }
 
     static func isPolicyDenied(_ error: NWError) -> Bool {
         if case .dns(let code) = error { return code == policyDeniedCode }
