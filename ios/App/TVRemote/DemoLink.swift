@@ -5,6 +5,8 @@ import TVRemoteKit
 enum DemoMode {
     /// `-demo`: a TV is paired and always connected.
     case connected
+    /// `-demoUnreachable`: a TV is paired but never answers.
+    case unreachable
     /// `-demoSetup`: no TV is paired and the TV list holds one TV.
     case setup
     /// `-demoPairing`: pairing has started and the code is on the (pretend) TV. The code is 123456.
@@ -18,15 +20,26 @@ enum DemoMode {
         if arguments.contains("-demoWrongCode") { return .wrongCode }
         if arguments.contains("-demoPairing") { return .pairing }
         if arguments.contains("-demoSetup") { return .setup }
+        if arguments.contains("-demoUnreachable") { return .unreachable }
         if arguments.contains("-demo") { return .connected }
         return nil
     }()
+
+    /// `-demoTouch` (with any mode): the touchpad shows a still swipe trail, for screenshots.
+    static let showsTouchTrail = CommandLine.arguments.contains("-demoTouch")
 
     /// The one TV the demo knows about.
     static let tv = DiscoveredTV(id: "demo", name: "Smart TV Pro", host: "192.168.8.16")
 
     var store: PairedTVStore {
-        self == .connected ? DemoStore() : DemoEmptyStore()
+        switch self {
+        case .connected, .unreachable: DemoStore()
+        case .setup, .pairing, .wrongCode: DemoEmptyStore()
+        }
+    }
+
+    var link: DemoLink {
+        DemoLink(isReachable: self != .unreachable)
     }
 
     /// The TV the setup screen starts out pairing with.
@@ -45,10 +58,15 @@ enum DemoMode {
     }
 }
 
-/// A stand-in for the TV: always connected, TV on, volume 12/100. Pairing succeeds with the code 123456.
+/// A stand-in for the TV: connected, TV on, volume 12/100 (or never answering, for `-demoUnreachable`).
+/// Pairing succeeds with the code 123456.
 struct DemoLink: TVLinking {
+    /// False for a TV that never answers.
+    var isReachable = true
+
     func openRemote(host: String) async throws -> RemoteChannel {
-        DemoChannel()
+        guard isReachable else { throw TVLinkError.unreachable }
+        return DemoChannel()
     }
 
     func pairing(host: String) -> PairingChannel {

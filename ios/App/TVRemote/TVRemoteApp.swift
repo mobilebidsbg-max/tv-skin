@@ -40,7 +40,7 @@ struct TVRemoteApp: App {
     /// A demo launch argument (see `DemoMode`) swaps the real link for `DemoLink`, so the UI works without a TV.
     private static func makeConnection() -> ConnectionManager {
         if let demo = DemoMode.current {
-            return ConnectionManager(link: DemoLink(), store: demo.store)
+            return ConnectionManager(link: demo.link, store: demo.store)
         }
         return ConnectionManager(
             link: LiveLink(identityStore: KeychainIdentityStore(), clientName: UIDevice.current.name),

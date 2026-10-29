@@ -1,7 +1,8 @@
 import SwiftUI
 import TVRemoteKit
 
-/// Setup screens until a TV is paired, the remote after that.
+/// Setup screens until a TV is paired, the remote after that. With a paired TV the remote stays up when iOS blocks
+/// the local network, and its header says so.
 struct RootView: View {
     @Environment(ConnectionManager.self) private var connection
 
@@ -11,19 +12,11 @@ struct RootView: View {
             switch connection.state {
             case .noTV, .needsPairing, .pairing:
                 SetupView(target: DemoMode.current?.pairingTarget)
-            case .localNetworkDenied:
+            case .localNetworkDenied where connection.tv == nil:
                 LocalNetworkDeniedView()
-            case .connecting, .connected, .unreachable:
+            case .connecting, .connected, .unreachable, .localNetworkDenied:
                 RemoteView()
             }
         }
-    }
-}
-
-// Placeholder until the remote screen exists.
-
-private struct RemoteView: View {
-    var body: some View {
-        Text("Remote").foregroundStyle(Theme.text)
     }
 }

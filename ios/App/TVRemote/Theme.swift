@@ -11,6 +11,14 @@ enum Theme {
     static let secondary = Color(hex: 0x8A8A8E)
     /// An unlit dot on the touchpad grid.
     static let idleDot = Color(hex: 0x2C2C2E)
+    /// The touchpad's surface, a shade above the background.
+    static let touchpad = Color(hex: 0x070707)
+    /// The hint on the touchpad.
+    static let hint = Color(hex: 0x4A4A4E)
+    /// The pull-up handle under the buttons.
+    static let grabber = Color(hex: 0x3A3A3C)
+    /// The label under the pull-up handle.
+    static let grabberLabel = Color(hex: 0x5A5A5E)
     /// Claude Code orange.
     static let accent = Color(hex: 0xD97757)
     /// Text and icons on top of `accent`.
