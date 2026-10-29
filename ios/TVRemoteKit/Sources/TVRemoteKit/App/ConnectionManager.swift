@@ -77,6 +77,8 @@ public final class ConnectionManager {
     @ObservationIgnored private var pairing: PairingChannel?
     /// The TV being paired; saved as `tv` once pairing succeeds.
     @ObservationIgnored private var pairingTV: PairedTV?
+    /// Power sent Wake-on-LAN while connecting; if the attempt under way fails, the next wait is `wakeDelay`.
+    @ObservationIgnored private var wokeWhileConnecting = false
 
     /// - Parameter sleep: waits the given number of seconds; tests pass a fake.
     public init(
@@ -164,7 +166,8 @@ public final class ConnectionManager {
     }
 
     /// Toggles the TV while connected. When the TV can't be reached, sends Wake-on-LAN (if its MAC is known) and
-    /// tries again 3 s later; without a MAC it simply tries again now.
+    /// tries again 3 s later; without a MAC it simply tries again now. While connecting, sends Wake-on-LAN (if the
+    /// MAC is known) and lets the attempt under way run on; should it fail, the next one follows 3 s later.
     public func power() {
         switch state {
         case .connected:
@@ -175,7 +178,15 @@ public final class ConnectionManager {
             } else {
                 startConnecting()
             }
-        case .noTV, .connecting, .needsPairing, .pairing, .localNetworkDenied:
+        case .connecting:
+            // An attempt against a TV in deep standby can take many seconds and does not stop when cancelled, so
+            // it is left alone and the wake goes out beside it.
+            guard channel == nil, let tv, let mac = tv.mac else { return }
+            wokeWhileConnecting = true
+            Task { [link] in
+                try? await link.wake(mac: mac, host: tv.host)
+            }
+        case .noTV, .needsPairing, .pairing, .localNetworkDenied:
             break
         }
     }
@@ -256,6 +267,7 @@ public final class ConnectionManager {
     ///   - mac: send Wake-on-LAN to this MAC first.
     private func startConnecting(after firstDelay: TimeInterval? = nil, failures: Int = 0, waking mac: String? = nil) {
         stopConnecting()
+        wokeWhileConnecting = false
         guard let host = tv?.host else { return }
         state = .connecting
         connectTask = Task { [weak self] in
@@ -293,8 +305,15 @@ public final class ConnectionManager {
                 default:
                     // TV off, Wi-Fi blip, a dropped handshake: all worth another try.
                     state = .unreachable
-                    delay = Self.retryDelays[min(failures, Self.retryDelays.count - 1)]
-                    failures += 1
+                    if wokeWhileConnecting {
+                        // Power woke the TV during this attempt: wait as after a wake, then back off from the start.
+                        wokeWhileConnecting = false
+                        delay = Self.wakeDelay
+                        failures = 0
+                    } else {
+                        delay = Self.retryDelays[min(failures, Self.retryDelays.count - 1)]
+                        failures += 1
+                    }
                     continue
                 }
             }
@@ -303,6 +322,7 @@ public final class ConnectionManager {
                 return
             }
             connectTask = nil
+            wokeWhileConnecting = false
             adopt(channel)
             return
         }

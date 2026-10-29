@@ -11,11 +11,16 @@ final class ConnectionManagerTests: XCTestCase {
     private var link: FakeLink!
     private var store: FakeStore!
     private var clock: FakeClock!
+    /// Sleeps and wakes in the order they happened.
+    private var log: Timeline!
 
     private func makeManager(tv: PairedTV? = knownTV) -> ConnectionManager {
+        log = Timeline()
         link = FakeLink()
+        link.waker.log = log
         store = FakeStore(tv)
         clock = FakeClock()
+        clock.log = log
         let clock = clock!
         return ConnectionManager(link: link, store: store, sleep: { await clock.sleep($0) })
     }
@@ -271,6 +276,61 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertEqual(clock.delays, [1, 3])
     }
 
+    func testPowerWhenUnreachableWakesBeforeWaitingThreeSeconds() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.unreachable)]
+        clock.holds = true
+        manager.appBecameActive()
+        await waitUntil { manager.state == .unreachable && self.clock.delays == [1] }
+        clock.holds = false
+
+        manager.power()
+
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(log.entries, ["sleep 1.0", "wake 44:0f:b4:88:a4:9b at 192.168.8.16", "sleep 3.0"])
+    }
+
+    func testPowerWhileConnectingWakesWithoutCancellingTheAttempt() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.unreachable)]
+        link.holdsOpens = true
+        manager.appBecameActive()
+        await waitUntil { self.link.openedHosts.count == 1 }
+        let attempt = manager.connectTask
+        XCTAssertEqual(manager.state, .connecting)
+
+        manager.power()
+
+        // The wake goes out while the attempt is still held, and the attempt keeps running.
+        await waitUntil { self.link.waker.macs == ["44:0f:b4:88:a4:9b"] }
+        XCTAssertEqual(link.waker.hosts, ["192.168.8.16"])
+        XCTAssertEqual(link.openedHosts.count, 1)
+        XCTAssertEqual(manager.connectTask, attempt)
+        XCTAssertEqual(manager.state, .connecting)
+
+        // That attempt fails: the TV gets the 3 s a wake earns instead of the first 1 s backoff step.
+        link.releaseOpens()
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(link.cancelledOpens, 0)
+        XCTAssertEqual(clock.delays, [3])
+        XCTAssertEqual(link.openedHosts.count, 2)
+    }
+
+    func testPowerWhileConnectingWithoutMACDoesNothing() async {
+        let manager = makeManager(tv: PairedTV(host: "192.168.8.20", name: "Bedroom", mac: nil))
+        link.openResults = [.failure(.unreachable)]
+        link.holdsOpens = true
+        manager.appBecameActive()
+        await waitUntil { self.link.openedHosts.count == 1 }
+
+        manager.power()
+        link.releaseOpens()
+
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(link.waker.macs, [])
+        XCTAssertEqual(clock.delays, [1])
+    }
+
     func testPowerWhenUnreachableWithoutMACRetriesNow() async {
         let manager = makeManager(tv: PairedTV(host: "192.168.8.20", name: "Bedroom", mac: nil))
         link.openResults = [.failure(.unreachable)]
@@ -455,6 +515,8 @@ final class FakeLink: TVLinking {
     var openResults: [Result<FakeChannel, TVLinkError>] = []
     var holdsOpens = false
     private var heldOpens: [CheckedContinuation<Void, Never>] = []
+    /// Held opens that the manager had cancelled by the time they were released.
+    private(set) var cancelledOpens = 0
     private(set) var openedHosts: [String] = []
     private(set) var channels: [FakeChannel] = []
     let pairingChannel = FakePairing()
@@ -464,7 +526,10 @@ final class FakeLink: TVLinking {
     @MainActor
     func openRemote(host: String) async throws -> RemoteChannel {
         openedHosts.append(host)
-        if holdsOpens { await withCheckedContinuation { heldOpens.append($0) } }
+        if holdsOpens {
+            await withCheckedContinuation { heldOpens.append($0) }
+            if Task.isCancelled { cancelledOpens += 1 }
+        }
         let channel = try openResults.isEmpty ? FakeChannel() : openResults.removeFirst().get()
         channels.append(channel)
         return channel
@@ -575,10 +640,21 @@ final class FakeStore: PairedTVStore {
 final class FakeWaker {
     private(set) var macs: [String] = []
     private(set) var hosts: [String] = []
+    var log: Timeline?
 
     func wake(mac: String, host: String) {
         macs.append(mac)
         hosts.append(host)
+        log?.append("wake \(mac) at \(host)")
+    }
+}
+
+/// What the fakes did, in order.
+final class Timeline {
+    private(set) var entries: [String] = []
+
+    func append(_ entry: String) {
+        entries.append(entry)
     }
 }
 
@@ -588,9 +664,11 @@ final class FakeWaker {
 final class FakeClock {
     private(set) var delays: [TimeInterval] = []
     var holds = false
+    var log: Timeline?
 
     func sleep(_ delay: TimeInterval) async {
         delays.append(delay)
+        log?.append("sleep \(delay)")
         if holds { try? await Task.sleep(for: .seconds(3600)) }
     }
 }
