@@ -1,9 +1,12 @@
 import SwiftUI
 import TVRemoteKit
 
-/// Input, the three HDMI ports, the TV's settings and search, and Power.
+/// Input, the three HDMI ports, the TV's settings and search, Power, and Change TV, which forgets this TV (after
+/// asking) and goes back to setup.
 struct TVPage: View {
     @Environment(ConnectionManager.self) private var connection
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmingForget = false
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
 
@@ -16,6 +19,18 @@ struct TVPage: View {
             tile("Settings", symbol: "gearshape") { connection.press(.settings) }
             tile("Search", symbol: "magnifyingglass") { connection.press(.search) }
             tile("Power", symbol: "power", tint: Theme.accent) { connection.power() }
+            tile("Change TV", symbol: "arrow.left.arrow.right") { confirmingForget = true }
+                .confirmationDialog(
+                    "Forget \(connection.tv?.name ?? "TV")?",
+                    isPresented: $confirmingForget,
+                    titleVisibility: .visible
+                ) {
+                    Button("Forget", role: .destructive) {
+                        dismiss()
+                        connection.forgetTV()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                }
         }
         .padding(.top, 6)
     }

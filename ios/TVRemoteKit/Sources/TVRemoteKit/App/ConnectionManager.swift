@@ -262,6 +262,25 @@ public final class ConnectionManager {
         state = .noTV
     }
 
+    /// Discovery found these TVs. If the paired TV is among them (by name) at another IPv4 address, its address has
+    /// changed: the new one is saved (name and MAC stay) and the manager connects there. Only while connecting or
+    /// unreachable; an open session shows the saved address works.
+    public func discovered(_ tvs: [DiscoveredTV]) {
+        guard channel == nil, var tv, let host = tv.newHost(in: tvs) else { return }
+        switch state {
+        case .connecting, .unreachable:
+            break
+        case .noTV, .connected, .needsPairing, .pairing, .localNetworkDenied:
+            return
+        }
+        tv.host = host
+        self.tv = tv
+        store.save(tv)
+        if isActive {
+            startConnecting()
+        }
+    }
+
     /// iOS blocks the local network (discovery found out): stop everything until the app is active again.
     /// Ignored while a session is open, which shows the local network works.
     public func localNetworkDenied() {

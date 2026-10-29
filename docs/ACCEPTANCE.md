@@ -97,6 +97,7 @@ Fill this in with Dimitar present. Write `Pass` or `Fail` in the Result column a
 | 4.26 | Settings | TV settings open | | |
 | 4.27 | Search | Google TV search opens | | |
 | 4.28 | Power | Puts the TV in standby (see 6.3 for waking it) | | |
+| 4.29 | Change TV, then Forget (do this last) | Asks "Forget <TV name>?"; Forget closes the sheet and shows "Find your TV"; pair again to continue | | |
 
 ## 5. Typing
 

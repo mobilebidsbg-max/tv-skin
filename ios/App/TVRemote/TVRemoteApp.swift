@@ -22,7 +22,11 @@ struct TVRemoteApp: App {
             case .active:
                 connection.appBecameActive()
                 if DemoMode.current == nil {
-                    probe.run { [connection] in connection.localNetworkDenied() }
+                    probe.run(
+                        lookingFor: connection.tv?.name,
+                        onFound: { [connection] in connection.discovered($0) },
+                        onDenied: { [connection] in connection.localNetworkDenied() }
+                    )
                 }
             case .background:
                 probe.stop()

@@ -4,7 +4,8 @@ import Foundation
 public struct PairedTV: Codable, Equatable {
     public var host: String
     public var name: String
-    /// For Wake-on-LAN; the protocol never reports it, so it is only known for TVs listed in `knownMACs`.
+    /// For Wake-on-LAN; the protocol never reports it, so it is only known for TVs listed in `knownMACs`. Looked up
+    /// once, when pairing; it stays with the TV when its address changes.
     public var mac: String?
 
     public init(host: String, name: String, mac: String?) {
@@ -15,6 +16,17 @@ public struct PairedTV: Codable, Equatable {
 
     /// MAC addresses of TVs known in advance, by IP address.
     static let knownMACs = ["192.168.8.16": "44:0f:b4:88:a4:9b"]
+
+    /// The address this TV has moved to (its DHCP lease changed), if `found` lists a TV with its name at another
+    /// IPv4 address; nil otherwise. Bonjour keeps service names unique on a network, so the name identifies the TV.
+    public func newHost(in found: [DiscoveredTV]) -> String? {
+        found.first { $0.name == name && $0.host != host && Self.isIPv4($0.host) }?.host
+    }
+
+    private static func isIPv4(_ host: String) -> Bool {
+        var address = in_addr()
+        return inet_pton(AF_INET, host, &address) == 1
+    }
 }
 
 public protocol PairedTVStore {

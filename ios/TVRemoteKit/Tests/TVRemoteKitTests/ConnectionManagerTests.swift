@@ -517,6 +517,75 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertEqual(link.openedHosts.count, 3)
     }
 
+    // MARK: - The TV moved to another address
+
+    func testUnreachableTVFoundAtAnotherAddressIsSavedThereAndConnected() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.unreachable)]
+        clock.holds = true
+        manager.appBecameActive()
+        await waitUntil { manager.state == .unreachable && self.clock.delays == [1] }
+        clock.holds = false
+
+        manager.discovered([
+            DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.8.30"),
+            DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.23"),
+        ])
+
+        XCTAssertEqual(manager.state, .connecting)
+        let moved = PairedTV(host: "192.168.8.23", name: knownTV.name, mac: knownTV.mac)
+        XCTAssertEqual(manager.tv, moved)
+        XCTAssertEqual(store.tv, moved, "the new address is saved, the MAC is kept")
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(link.openedHosts, ["192.168.8.16", "192.168.8.23"])
+    }
+
+    func testDiscoveryLeavesTheTVAloneUnlessItsNameTurnsUpAtAnotherIPv4Address() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.unreachable)]
+        clock.holds = true
+        manager.appBecameActive()
+        await waitUntil { manager.state == .unreachable && self.clock.delays == [1] }
+        let retries = manager.connectTask
+
+        manager.discovered([])
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.16")])
+        manager.discovered([DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.8.30")])
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "fe80::1%en0")])
+
+        XCTAssertEqual(manager.tv, knownTV)
+        XCTAssertEqual(store.tv, knownTV)
+        XCTAssertEqual(manager.connectTask, retries, "the backoff under way keeps running")
+        XCTAssertEqual(link.openedHosts.count, 1)
+    }
+
+    func testDiscoveryChangesNothingWhileConnected() async throws {
+        let (manager, channel) = try await makeConnectedManager()
+
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.23")])
+
+        XCTAssertEqual(store.tv, knownTV)
+        XCTAssertFalse(channel.closed)
+        XCTAssertEqual(manager.state, .connected(tvOn: true))
+    }
+
+    func testAMovedTVIsWokenWithItsMACAtItsNewAddress() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.unreachable), .failure(.unreachable)]
+        clock.holds = true
+        manager.appBecameActive()
+        await waitUntil { manager.state == .unreachable && self.clock.delays == [1] }
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.23")])
+        await waitUntil { manager.state == .unreachable && self.clock.delays == [1, 1] }
+        clock.holds = false
+
+        manager.power()
+
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(link.waker.macs, ["44:0f:b4:88:a4:9b"])
+        XCTAssertEqual(link.waker.hosts, ["192.168.8.23"])
+    }
+
     func testForgetTVClosesTheSessionAndClearsTheStore() async throws {
         let (manager, channel) = try await makeConnectedManager()
 
