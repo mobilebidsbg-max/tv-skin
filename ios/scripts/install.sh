@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Build the TV Remote app and install it on every connected iPhone.
+# Build the TV Remote app for every connected iPhone and install it there.
 #
 # usage: ios/scripts/install.sh [--dry-run]
 #
 # TV_TEAM_ID is the Apple signing team. It is read from the environment, then from .env at the repo root,
 # then from Xcode's signed-in accounts, then from a local "Apple Development" certificate.
+# Each phone gets its own build, which registers the phone with the team (a free team has no other way).
 # With a free Apple ID the app expires after 7 days: plug in the iPhone and run this script again.
+# --dry-run prints the commands (with placeholders for the phone) instead of running them.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -121,26 +123,45 @@ resolve_team_id() {
     export TV_TEAM_ID
 }
 
-# Prints "<device id><TAB><name>" for every paired, reachable iPhone in a `devicectl list devices` JSON file.
+# Prints "<UDID><TAB><name>" for every paired, reachable iPhone in a `devicectl list devices` JSON file.
+# Exits with 2 and a message on stderr when the file is not a device list (empty, cut short, another format).
 list_iphones() {
     /usr/bin/python3 -I -c '
 import json, sys
-with open(sys.argv[1]) as handle:
-    devices = json.load(handle).get("result", {}).get("devices", [])
+try:
+    with open(sys.argv[1]) as handle:
+        devices = json.load(handle)["result"]["devices"]
+    if not isinstance(devices, list):
+        raise TypeError("devices is not a list")
+except (OSError, ValueError, KeyError, TypeError) as error:
+    print("devicectl did not write a device list (%s: %s)" % (type(error).__name__, error), file=sys.stderr)
+    sys.exit(2)
 for device in devices:
-    hardware = device.get("hardwareProperties", {})
-    connection = device.get("connectionProperties", {})
-    name = device.get("deviceProperties", {}).get("name", "iPhone")
+    if not isinstance(device, dict):
+        continue
+    hardware = device.get("hardwareProperties") or {}
+    connection = device.get("connectionProperties") or {}
+    name = str((device.get("deviceProperties") or {}).get("name") or "iPhone").replace("\t", " ")
     if hardware.get("deviceType") != "iPhone":
         continue
     if connection.get("pairingState", "paired") != "paired":
         continue
     if connection.get("tunnelState") == "unavailable":
         continue
-    identifier = device.get("identifier")
-    if identifier:
-        print(identifier + "\t" + name.replace("\t", " "))
+    udid = hardware.get("udid")
+    if not udid:
+        print("Skipping %s: devicectl did not report its UDID." % name, file=sys.stderr)
+        continue
+    print(udid + "\t" + name)
 ' "$1"
+}
+
+no_iphone_hint() {
+    {
+        echo "No iPhone is connected."
+        echo "Plug it in with a cable, unlock it, tap Trust, and turn on Settings > Privacy & Security > Developer Mode (it restarts the phone)."
+        echo "Then run this script again."
+    } >&2
 }
 
 main() {
@@ -149,7 +170,7 @@ main() {
         case "$arg" in
             --dry-run) DRY_RUN=1 ;;
             -h|--help)
-                sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+                sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
                 exit 0
                 ;;
             *) die "unknown argument '$arg' (usage: install.sh [--dry-run])" ;;
@@ -166,49 +187,57 @@ main() {
         xcodebuild -version >/dev/null 2>&1 || die "Xcode is not set up. Install Xcode, open it once, then run: sudo xcode-select -s /Applications/Xcode.app"
     fi
 
-    echo "1/3 Generating the Xcode project"
+    # The phones come first: a free team can only make a provisioning profile for a device it has registered,
+    # and each build below registers its phone.
+    echo "1/3 Looking for connected iPhones"
+    local devices
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        run xcrun devicectl list devices --quiet --json-output DEVICES_JSON
+        devices=$'IPHONE_UDID\tyour iPhone'
+    else
+        DEVICES_JSON="$(mktemp -t tvremote-devices)"
+        trap 'rm -f "$DEVICES_JSON"' EXIT
+        if ! xcrun devicectl list devices --quiet --json-output "$DEVICES_JSON" </dev/null >/dev/null; then
+            die "devicectl could not list devices. Is Xcode installed and opened once? Try: xcrun devicectl list devices"
+        fi
+        devices="$(list_iphones "$DEVICES_JSON")" || die "could not read the list of connected devices. Try: xcrun devicectl list devices"
+        if [[ -z "$devices" ]]; then
+            no_iphone_hint
+            exit 1
+        fi
+        cut -f2 <<< "$devices" | sed 's/^/  /'
+    fi
+
+    echo "2/3 Generating the Xcode project"
     run xcodegen generate --spec ios/App/project.yml
 
-    echo "2/3 Building"
-    run xcodebuild -project ios/App/TVRemote.xcodeproj -scheme TVRemote -configuration Debug \
-        -destination 'generic/platform=iOS' -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
-        "DEVELOPMENT_TEAM=$TV_TEAM_ID" -derivedDataPath ios/App/build build
-    if [[ "$DRY_RUN" -eq 0 && ! -d "$APP_PATH" ]]; then
-        die "the build did not produce $APP_PATH"
-    fi
-
-    echo "3/3 Installing on connected iPhones"
-    local devices id name failed=0 installed=0
-    DEVICES_JSON="$(mktemp -t tvremote-devices)"
-    trap 'rm -f "$DEVICES_JSON"' EXIT
-    run xcrun devicectl list devices --quiet --json-output "$DEVICES_JSON"
-    if [[ "$DRY_RUN" -eq 1 ]]; then
-        # Show the install command once, with a placeholder for the device.
-        run xcrun devicectl device install app --device DEVICE_ID "$APP_PATH"
-        return 0
-    fi
-
-    devices="$(list_iphones "$DEVICES_JSON")"
-    if [[ -z "$devices" ]]; then
-        {
-            echo "No iPhone is connected."
-            echo "Plug it in with a cable, unlock it, tap Trust, and turn on Settings > Privacy & Security > Developer Mode (it restarts the phone)."
-            echo "Then run this script again."
-        } >&2
-        exit 1
-    fi
-
-    while IFS=$'\t' read -r id name; do
-        if xcrun devicectl device install app --device "$id" "$APP_PATH"; then
-            echo "App installed on $name"
+    echo "3/3 Building and installing, one iPhone at a time"
+    local udid name failed=0 installed=0
+    # The list is read on fd 3, so xcodebuild and devicectl cannot swallow it from stdin.
+    while IFS=$'\t' read -r udid name <&3; do
+        echo "Building for $name"
+        if ! run xcodebuild -project ios/App/TVRemote.xcodeproj -scheme TVRemote -configuration Debug \
+            -destination "id=$udid" -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
+            "DEVELOPMENT_TEAM=$TV_TEAM_ID" -derivedDataPath ios/App/build build </dev/null; then
+            echo "install.sh: the build for $name failed (see above)." >&2
+            failed=$((failed + 1))
+            continue
+        fi
+        if [[ "$DRY_RUN" -eq 0 && ! -d "$APP_PATH" ]]; then
+            echo "install.sh: the build did not produce $APP_PATH" >&2
+            failed=$((failed + 1))
+            continue
+        fi
+        if run xcrun devicectl device install app --device "$udid" "$APP_PATH" </dev/null; then
+            [[ "$DRY_RUN" -eq 1 ]] || echo "App installed on $name"
             installed=$((installed + 1))
         else
             echo "install.sh: could not install on $name (is it unlocked, trusted and in Developer Mode?)" >&2
             failed=$((failed + 1))
         fi
-    done <<< "$devices"
+    done 3<<< "$devices"
 
-    if [[ "$installed" -gt 0 ]]; then
+    if [[ "$DRY_RUN" -eq 0 && "$installed" -gt 0 ]]; then
         echo "First time on a phone: Settings > General > VPN & Device Management > trust the developer app, then open TV Remote."
     fi
     [[ "$failed" -eq 0 ]] || exit 1
