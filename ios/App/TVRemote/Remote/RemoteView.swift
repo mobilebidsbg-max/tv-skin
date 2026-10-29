@@ -5,8 +5,10 @@ import TVRemoteKit
 struct RemoteView: View {
     @Environment(ConnectionManager.self) private var connection
 
-    @State var showControls = false
-    @State var showKeyboard = false
+    @State var showControls = DemoMode.sheetTab != nil
+    @State var showKeyboard = DemoMode.showsKeyboard
+    /// The page the controls were last on; the sheet opens there again.
+    @State private var controlsTab = DemoMode.sheetTab ?? .playback
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,15 +25,12 @@ struct RemoteView: View {
             ControlsHandle(open: openControls)
                 .padding(.top, 14)
         }
+        .onAppear { Haptics.prepare() }
         .sheet(isPresented: $showControls) {
-            Text("Controls")
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+            ControlsSheet(tab: $controlsTab)
         }
         .sheet(isPresented: $showKeyboard) {
-            Text("Keyboard")
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+            KeyboardSheet()
         }
     }
 
@@ -110,7 +109,7 @@ private struct ControlsHandle: View {
     }
 }
 
-/// A dark round button with a hairline edge. It gives a soft tap and dims slightly the moment it is pressed.
+/// A dark round button with a hairline edge. It taps back and dims slightly the moment a finger lands.
 struct RoundButtonStyle: ButtonStyle {
     let diameter: CGFloat
 
@@ -122,9 +121,7 @@ struct RoundButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
             .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-            .onChange(of: configuration.isPressed) { _, pressed in
-                if pressed { Haptics.button() }
-            }
+            .contentShape(Circle())
+            .hapticOnPressDown()
     }
 }

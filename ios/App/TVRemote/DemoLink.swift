@@ -28,6 +28,19 @@ enum DemoMode {
     /// `-demoTouch` (with any mode): the touchpad shows a still swipe trail, for screenshots.
     static let showsTouchTrail = CommandLine.arguments.contains("-demoTouch")
 
+    /// `-demoSheet playback|volume|apps|tv`: the remote starts with the hidden controls open on that page.
+    static let sheetTab: ControlsTab? = {
+        let arguments = CommandLine.arguments
+        guard let flag = arguments.firstIndex(of: "-demoSheet"), flag + 1 < arguments.count else { return nil }
+        return ControlsTab(rawValue: arguments[flag + 1])
+    }()
+
+    /// `-demoKeyboard`: the remote starts with the keyboard sheet open.
+    static let showsKeyboard = CommandLine.arguments.contains("-demoKeyboard")
+
+    /// `-demoNoTextField`: the pretend TV has no text field to type into (it has one by default).
+    static let hasTextField = !CommandLine.arguments.contains("-demoNoTextField")
+
     /// The one TV the demo knows about.
     static let tv = DiscoveredTV(id: "demo", name: "Smart TV Pro", host: "192.168.8.16")
 
@@ -58,7 +71,8 @@ enum DemoMode {
     }
 }
 
-/// A stand-in for the TV: connected, TV on, volume 12/100 (or never answering, for `-demoUnreachable`).
+/// A stand-in for the TV: connected, TV on, volume 12/100, a text field to type into (or never answering, for
+/// `-demoUnreachable`).
 /// Pairing succeeds with the code 123456.
 struct DemoLink: TVLinking {
     /// False for a TV that never answers.
@@ -117,6 +131,7 @@ private final class DemoChannel: RemoteChannel {
         events = AsyncStream { continuation in
             continuation.yield(.ready(isOn: true))
             continuation.yield(.volume(level: 12, max: 100, muted: false))
+            if DemoMode.hasTextField { continuation.yield(.textField(available: true)) }
         }
     }
 

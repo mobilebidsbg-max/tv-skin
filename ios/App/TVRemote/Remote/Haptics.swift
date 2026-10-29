@@ -1,3 +1,4 @@
+import SwiftUI
 import TVRemoteKit
 import UIKit
 
@@ -51,9 +52,15 @@ enum Haptics {
         }
     }
 
-    /// A button on the remote.
+    /// A button on the remote. The generators are warmed again right away, so the next tap is just as quick.
     static func button() {
         play(.soft)
+        prepare()
+    }
+
+    /// One step of a held volume button.
+    static func step() {
+        play(.selection)
     }
 
     private static func play(_ feel: Feel) {
@@ -64,5 +71,27 @@ enum Haptics {
         case .soft: soft.impactOccurred()
         case .selection: selection.selectionChanged()
         }
+    }
+}
+
+/// Fires `Haptics.button()` the moment a finger lands on a button, not after the button has redrawn as pressed.
+private struct PressDownHaptic: ViewModifier {
+    @GestureState private var isDown = false
+
+    func body(content: Content) -> some View {
+        content.simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isDown) { _, isDown, _ in
+                    if !isDown { Haptics.button() }
+                    isDown = true
+                }
+        )
+    }
+}
+
+extension View {
+    /// A soft tap on the iPhone at the moment of touch-down. Does not take the touch from the button it is on.
+    func hapticOnPressDown() -> some View {
+        modifier(PressDownHaptic())
     }
 }

@@ -19,13 +19,19 @@ enum Theme {
     static let grabber = Color(hex: 0x3A3A3C)
     /// The label under the pull-up handle.
     static let grabberLabel = Color(hex: 0x5A5A5E)
+    /// The hidden controls sheet.
+    static let sheet = Color(hex: 0x0F0F0F)
+    /// The chosen tab, and a pressed button in the sheet.
+    static let selected = Color(hex: 0x2C2C2E)
+    /// Small labels under the sheet's tiles.
+    static let tileLabel = Color(hex: 0xB0B0B4)
     /// Claude Code orange.
     static let accent = Color(hex: 0xD97757)
     /// Text and icons on top of `accent`.
     static let onAccent = Color(hex: 0x140A06)
 }
 
-private extension Color {
+extension Color {
     init(hex: UInt32) {
         self.init(
             .sRGB,
@@ -34,5 +40,11 @@ private extension Color {
             blue: Double(hex & 0xFF) / 255,
             opacity: 1
         )
+    }
+
+    /// `#RRGGBB` (the `#` is optional). Anything else is a mid grey.
+    init(hex: String) {
+        let digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        self.init(hex: digits.count == 6 ? UInt32(digits, radix: 16) ?? 0x808080 : 0x808080)
     }
 }
