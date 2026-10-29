@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# Build the TV Remote app and install it on every connected iPhone.
+#
+# usage: ios/scripts/install.sh [--dry-run]
+#
+# TV_TEAM_ID is the Apple signing team. It is read from the environment, then from .env at the repo root,
+# then from Xcode's signed-in accounts, then from a local "Apple Development" certificate.
+# With a free Apple ID the app expires after 7 days: plug in the iPhone and run this script again.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+APP_PATH="ios/App/build/Build/Products/Debug-iphoneos/TVRemote.app"
+DRY_RUN=0
+DEVICES_JSON=""
+
+die() {
+    echo "install.sh: $*" >&2
+    exit 1
+}
+
+# Runs a command, or only prints it with --dry-run.
+run() {
+    printf '+'
+    printf ' %q' "$@"
+    printf '\n'
+    if [[ "$DRY_RUN" -eq 0 ]]; then
+        "$@"
+    fi
+}
+
+# 10 upper-case letters/digits, e.g. ABCDE12345.
+valid_team_id() {
+    [[ "$1" =~ ^[A-Z0-9]{10}$ ]]
+}
+
+# Prints TV_TEAM_ID from .env at the repo root, if it is set there.
+team_id_from_env_file() {
+    local file="$REPO_ROOT/.env" value
+    [[ -f "$file" ]] || return 0
+    value="$(sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}TV_TEAM_ID[[:space:]]*=[[:space:]]*//p' "$file" | tail -n 1)"
+    value="${value%%#*}"
+    value="$(printf '%s' "$value" | tr -d "\"'[:space:]")"
+    printf '%s' "$value"
+}
+
+# Prints the team IDs of the accounts signed in to Xcode (one per line, no duplicates).
+# Xcode stores them in its preferences under IDEProvisioningTeams / IDEProvisioningTeamByIdentifier.
+team_ids_from_xcode() {
+    defaults export com.apple.dt.Xcode - 2>/dev/null | /usr/bin/python3 -I -c '
+import plistlib, sys
+try:
+    prefs = plistlib.loads(sys.stdin.buffer.read())
+except Exception:
+    sys.exit(0)
+
+found = []
+def walk(node):
+    if isinstance(node, dict):
+        team = node.get("teamID")
+        if isinstance(team, str) and team not in found:
+            found.append(team)
+        for value in node.values():
+            walk(value)
+    elif isinstance(node, list):
+        for value in node:
+            walk(value)
+
+for key in ("IDEProvisioningTeams", "IDEProvisioningTeamByIdentifier"):
+    walk(prefs.get(key))
+print("\n".join(found))
+' || true
+}
+
+# Prints the team IDs (OU field) of the "Apple Development" certificates in the keychain.
+# The number in brackets in the certificate name is NOT always the team ID, so read the certificate itself.
+team_ids_from_certificates() {
+    local name subject
+    while IFS= read -r name; do
+        subject="$(security find-certificate -c "$name" -p 2>/dev/null | openssl x509 -noout -subject 2>/dev/null || true)"
+        printf '%s\n' "$subject" | grep -oE 'OU ?= ?[A-Z0-9]{10}' | grep -oE '[A-Z0-9]{10}$' || true
+    done < <(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/^[[:space:]]*[0-9]*) [0-9A-F]* "\(Apple Development:[^"]*\)".*/\1/p') | sort -u
+}
+
+# Sets TV_TEAM_ID or exits with a message.
+resolve_team_id() {
+    TV_TEAM_ID="${TV_TEAM_ID:-}"
+    if [[ -z "$TV_TEAM_ID" ]]; then
+        TV_TEAM_ID="$(team_id_from_env_file)"
+    fi
+    if [[ -z "$TV_TEAM_ID" ]]; then
+        local found count
+        found="$(team_ids_from_xcode || true)"
+        if [[ -z "$found" ]]; then
+            found="$(team_ids_from_certificates || true)"
+        fi
+        count="$(printf '%s' "$found" | grep -c . || true)"
+        if [[ "$count" -eq 1 ]]; then
+            TV_TEAM_ID="$found"
+            echo "Using signing team $TV_TEAM_ID (found on this Mac)."
+        elif [[ "$count" -gt 1 ]]; then
+            {
+                echo "install.sh: more than one signing team found on this Mac:"
+                sed 's/^/  /' <<< "$found"
+                echo "Pick one: export TV_TEAM_ID=<team id>   (or put TV_TEAM_ID=<team id> in .env)"
+            } >&2
+            exit 1
+        fi
+    fi
+    if [[ -z "$TV_TEAM_ID" ]]; then
+        {
+            echo "install.sh: TV_TEAM_ID is not set and no signing team was found."
+            echo "1. Xcode > Settings > Accounts > add your Apple ID (this creates a Personal Team)."
+            echo "2. Run: export TV_TEAM_ID=<10-character team id>   (or put TV_TEAM_ID=... in .env)"
+            echo "   The team id is the Organizational Unit of your 'Apple Development' certificate"
+            echo "   (Keychain Access > My Certificates > double-click it), or Team ID under Membership details at developer.apple.com/account."
+            echo "   The certificate exists once Xcode has signed a build with your Apple ID."
+        } >&2
+        exit 1
+    fi
+    valid_team_id "$TV_TEAM_ID" || die "TV_TEAM_ID '$TV_TEAM_ID' should be 10 upper-case letters or digits (like ABCDE12345)."
+    export TV_TEAM_ID
+}
+
+# Prints "<device id><TAB><name>" for every paired, reachable iPhone in a `devicectl list devices` JSON file.
+list_iphones() {
+    /usr/bin/python3 -I -c '
+import json, sys
+with open(sys.argv[1]) as handle:
+    devices = json.load(handle).get("result", {}).get("devices", [])
+for device in devices:
+    hardware = device.get("hardwareProperties", {})
+    connection = device.get("connectionProperties", {})
+    name = device.get("deviceProperties", {}).get("name", "iPhone")
+    if hardware.get("deviceType") != "iPhone":
+        continue
+    if connection.get("pairingState", "paired") != "paired":
+        continue
+    if connection.get("tunnelState") == "unavailable":
+        continue
+    identifier = device.get("identifier")
+    if identifier:
+        print(identifier + "\t" + name.replace("\t", " "))
+' "$1"
+}
+
+main() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            --dry-run) DRY_RUN=1 ;;
+            -h|--help)
+                sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+                exit 0
+                ;;
+            *) die "unknown argument '$arg' (usage: install.sh [--dry-run])" ;;
+        esac
+    done
+
+    cd "$REPO_ROOT"
+    resolve_team_id
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        echo "Dry run: printing the commands instead of running them. Team: $TV_TEAM_ID"
+        echo "+ cd $REPO_ROOT"
+    else
+        command -v xcodegen >/dev/null || die "XcodeGen is missing. Install it with: brew install xcodegen"
+        xcodebuild -version >/dev/null 2>&1 || die "Xcode is not set up. Install Xcode, open it once, then run: sudo xcode-select -s /Applications/Xcode.app"
+    fi
+
+    echo "1/3 Generating the Xcode project"
+    run xcodegen generate --spec ios/App/project.yml
+
+    echo "2/3 Building"
+    run xcodebuild -project ios/App/TVRemote.xcodeproj -scheme TVRemote -configuration Debug \
+        -destination 'generic/platform=iOS' -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
+        "DEVELOPMENT_TEAM=$TV_TEAM_ID" -derivedDataPath ios/App/build build
+    if [[ "$DRY_RUN" -eq 0 && ! -d "$APP_PATH" ]]; then
+        die "the build did not produce $APP_PATH"
+    fi
+
+    echo "3/3 Installing on connected iPhones"
+    local devices id name failed=0 installed=0
+    DEVICES_JSON="$(mktemp -t tvremote-devices)"
+    trap 'rm -f "$DEVICES_JSON"' EXIT
+    run xcrun devicectl list devices --quiet --json-output "$DEVICES_JSON"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        # Show the install command once, with a placeholder for the device.
+        run xcrun devicectl device install app --device DEVICE_ID "$APP_PATH"
+        return 0
+    fi
+
+    devices="$(list_iphones "$DEVICES_JSON")"
+    if [[ -z "$devices" ]]; then
+        {
+            echo "No iPhone is connected."
+            echo "Plug it in with a cable, unlock it, tap Trust, and turn on Settings > Privacy & Security > Developer Mode (it restarts the phone)."
+            echo "Then run this script again."
+        } >&2
+        exit 1
+    fi
+
+    while IFS=$'\t' read -r id name; do
+        if xcrun devicectl device install app --device "$id" "$APP_PATH"; then
+            echo "App installed on $name"
+            installed=$((installed + 1))
+        else
+            echo "install.sh: could not install on $name (is it unlocked, trusted and in Developer Mode?)" >&2
+            failed=$((failed + 1))
+        fi
+    done <<< "$devices"
+
+    if [[ "$installed" -gt 0 ]]; then
+        echo "First time on a phone: Settings > General > VPN & Device Management > trust the developer app, then open TV Remote."
+    fi
+    [[ "$failed" -eq 0 ]] || exit 1
+}
+
+# Run only when executed, so the functions above can be sourced for testing.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
