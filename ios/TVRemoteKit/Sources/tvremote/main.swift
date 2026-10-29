@@ -22,6 +22,9 @@ commands:
       Print every event from the TV, for n seconds or until the connection ends (then exit status 1).
   wake --mac <aa:bb:cc:dd:ee:ff>
       Broadcast a Wake-on-LAN packet to port 9.
+  discover [--seconds <n>]
+      List the TVs on the local network (Bonjour), one line "<ip>, a tab, <name>" each, for n seconds
+      (default 5). Prints NONE and exits with status 1 when it finds no TV.
 The remote commands print SENT, or the error name and exit with status 1.
 
 key names: UP DOWN LEFT RIGHT OK \(KeyCode.allCases.map(\.name).joined(separator: " "))
@@ -232,6 +235,39 @@ func wakeTV(_ arguments: [String]) async throws {
     print("SENT")
 }
 
+func discoverTVs(_ arguments: [String]) async throws {
+    let arguments = try Arguments(arguments, options: ["--seconds"])
+    try arguments.noPositionals()
+    var seconds = 5.0
+    if let value = arguments.options["--seconds"] {
+        guard let parsed = Double(value), parsed > 0, parsed < 3600 else {
+            throw UsageError(message: "--seconds needs a number between 0 and 3600")
+        }
+        seconds = parsed
+    }
+
+    let discovery = TVDiscovery()
+    discovery.onPolicyDenied = {
+        print(TVLinkError.localNetworkDenied)
+        exit(1)
+    }
+    discovery.start()
+    Task {
+        try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+        discovery.stop()
+    }
+    var printed: Set<String> = []
+    for await list in discovery.results {
+        for tv in list where printed.insert("\(tv.id)\t\(tv.host)").inserted {
+            print("\(tv.host)\t\(tv.name)")
+        }
+    }
+    if printed.isEmpty {
+        print("NONE")
+        exit(1)
+    }
+}
+
 var arguments = Array(CommandLine.arguments.dropFirst())
 let command = arguments.isEmpty ? nil : arguments.removeFirst()
 
@@ -249,6 +285,8 @@ do {
         try await watchEvents(arguments)
     case "wake":
         try await wakeTV(arguments)
+    case "discover":
+        try await discoverTVs(arguments)
     case "help", "--help", "-h":
         print(usage)
     case let other:

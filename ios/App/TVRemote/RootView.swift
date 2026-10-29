@@ -1,7 +1,7 @@
 import SwiftUI
 import TVRemoteKit
 
-/// Pairing screens until a TV is paired, the remote after that.
+/// Setup screens until a TV is paired, the remote after that.
 struct RootView: View {
     @Environment(ConnectionManager.self) private var connection
 
@@ -10,21 +10,17 @@ struct RootView: View {
             Theme.background.ignoresSafeArea()
             switch connection.state {
             case .noTV, .needsPairing, .pairing:
-                SetupView()
-            case .connecting, .connected, .unreachable, .localNetworkDenied:
+                SetupView(target: DemoMode.current?.pairingTarget)
+            case .localNetworkDenied:
+                LocalNetworkDeniedView()
+            case .connecting, .connected, .unreachable:
                 RemoteView()
             }
         }
     }
 }
 
-// Placeholders until the setup and remote screens exist.
-
-private struct SetupView: View {
-    var body: some View {
-        Text("Setup").foregroundStyle(Theme.text)
-    }
-}
+// Placeholder until the remote screen exists.
 
 private struct RemoteView: View {
     var body: some View {

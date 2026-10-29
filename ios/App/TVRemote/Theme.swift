@@ -13,6 +13,8 @@ enum Theme {
     static let idleDot = Color(hex: 0x2C2C2E)
     /// Claude Code orange.
     static let accent = Color(hex: 0xD97757)
+    /// Text and icons on top of `accent`.
+    static let onAccent = Color(hex: 0x140A06)
 }
 
 private extension Color {

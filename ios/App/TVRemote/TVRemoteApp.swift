@@ -5,6 +5,7 @@ import UIKit
 @main
 struct TVRemoteApp: App {
     @State private var connection = TVRemoteApp.makeConnection()
+    @State private var probe = LocalNetworkProbe()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -13,12 +14,18 @@ struct TVRemoteApp: App {
                 .environment(connection)
                 .preferredColorScheme(.dark)
                 .background(Theme.background.ignoresSafeArea())
+                .environment(\.makeTVFinder, TVRemoteApp.makeFinder)
+                .task { await DemoMode.current?.prepare(connection) }
         }
         .onChange(of: scenePhase, initial: true) { _, phase in
             switch phase {
             case .active:
                 connection.appBecameActive()
+                if DemoMode.current == nil {
+                    probe.run { [connection] in connection.localNetworkDenied() }
+                }
             case .background:
+                probe.stop()
                 connection.appWentBackground()
             default:
                 break
@@ -26,10 +33,14 @@ struct TVRemoteApp: App {
         }
     }
 
-    /// `-demo` swaps the real link for `DemoLink`, so the UI works without a TV.
+    private static func makeFinder() -> TVFinding {
+        DemoMode.current == nil ? TVDiscovery() : DemoFinder()
+    }
+
+    /// A demo launch argument (see `DemoMode`) swaps the real link for `DemoLink`, so the UI works without a TV.
     private static func makeConnection() -> ConnectionManager {
-        if CommandLine.arguments.contains("-demo") {
-            return ConnectionManager(link: DemoLink(), store: DemoStore())
+        if let demo = DemoMode.current {
+            return ConnectionManager(link: DemoLink(), store: demo.store)
         }
         return ConnectionManager(
             link: LiveLink(identityStore: KeychainIdentityStore(), clientName: UIDevice.current.name),
