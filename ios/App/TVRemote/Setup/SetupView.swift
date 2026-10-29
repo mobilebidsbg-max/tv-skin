@@ -7,11 +7,16 @@ import TVRemoteKit
 struct SetupView: View {
     @Environment(ConnectionManager.self) private var connection
     @Environment(\.makeTVFinder) private var makeFinder
+    @Environment(\.scenePhase) private var scenePhase
 
     /// The TV being paired, kept for trying again.
     @State private var target: DiscoveredTV?
     @State private var found: [DiscoveredTV] = []
     @State private var address = ""
+    /// Bumped to start the search over.
+    @State private var searchRun = 0
+    /// The app has been active since this screen appeared, so the next activation is a return to it.
+    @State private var hasBeenActive = false
 
     init(target: DiscoveredTV? = nil) {
         _target = State(initialValue: target)
@@ -64,7 +69,13 @@ struct SetupView: View {
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) { addressEntry }
-        .task { await discover() }
+        .task(id: searchRun) { await discover() }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            guard phase == .active else { return }
+            // Back from the Local Network prompt or from Settings: start a search that found nothing over at once.
+            if hasBeenActive, found.isEmpty { searchRun += 1 }
+            hasBeenActive = true
+        }
     }
 
     private var searching: some View {
@@ -107,22 +118,21 @@ struct SetupView: View {
 
     /// The TV at the typed address; its name if discovery has found it, otherwise just "TV".
     private var manualTV: DiscoveredTV {
-        DiscoveredTV(id: address, name: found.first { $0.host == address }?.name ?? "TV", host: address)
+        DiscoveredTV.typed(address, among: found)
     }
 
     // MARK: - Actions
 
-    /// Looks for TVs for as long as the chooser is on screen.
+    /// Looks for TVs for as long as the chooser is on screen, starting over every 5 s while it finds none
+    /// ("Looking for TVs…" stays up meanwhile).
     private func discover() async {
         found = []
-        let finder = makeFinder()
         let connection = connection
-        finder.onPolicyDenied = { Task { @MainActor in connection.localNetworkDenied() } }
-        finder.start()
-        defer { finder.stop() }
-        for await list in finder.results {
-            found = list
-        }
+        await TVSearch.run(
+            makeFinder: makeFinder,
+            onDenied: { Task { @MainActor in connection.localNetworkDenied() } },
+            onResults: { found = $0 }
+        )
     }
 
     private func pair(_ tv: DiscoveredTV) {

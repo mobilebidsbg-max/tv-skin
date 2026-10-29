@@ -14,6 +14,12 @@ public struct DiscoveredTV: Identifiable, Equatable, Sendable {
         self.name = name
         self.host = host
     }
+
+    /// The TV at an address the user typed: named as discovery found it there (its Bonjour name, which also lets
+    /// the app follow it to a new address later), or "TV" when discovery has not found it.
+    public static func typed(_ address: String, among found: [DiscoveredTV]) -> DiscoveredTV {
+        DiscoveredTV(id: address, name: found.first { $0.host == address }?.name ?? "TV", host: address)
+    }
 }
 
 /// Finds TVs, as the setup screen uses it; the app's demo mode swaps in a fake.
