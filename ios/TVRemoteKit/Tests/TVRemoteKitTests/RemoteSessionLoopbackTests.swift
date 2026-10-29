@@ -149,6 +149,20 @@ final class RemoteSessionLoopbackTests: XCTestCase {
         await assertThrows(.notPaired) { _ = try await self.open(tv) }
     }
 
+    /// A TV going to standby or rebooting drops the connection in the middle of the handshake. That is a
+    /// dropped connection to retry, not a rejected certificate.
+    func testHangUpDuringTheHandshakeIsClosed() async throws {
+        let tv = try DroppingTV.start(reset: false)
+        defer { tv.close() }
+        await assertThrows(.closed) { _ = try await self.open(port: tv.port) }
+    }
+
+    func testResetDuringTheHandshakeIsClosed() async throws {
+        let tv = try DroppingTV.start(reset: true)
+        defer { tv.close() }
+        await assertThrows(.closed) { _ = try await self.open(port: tv.port) }
+    }
+
     func testNoStartInTimeIsTimeout() async throws {
         let tv = try startTV(Self.script(isOn: nil))
         defer { tv.close() }
@@ -229,9 +243,17 @@ final class RemoteSessionLoopbackTests: XCTestCase {
         startTimeout: TimeInterval = 5,
         silenceTimeout: TimeInterval = 16
     ) async throws -> RemoteSession {
+        try await open(port: tv.port, startTimeout: startTimeout, silenceTimeout: silenceTimeout)
+    }
+
+    private func open(
+        port: Int,
+        startTimeout: TimeInterval = 5,
+        silenceTimeout: TimeInterval = 16
+    ) async throws -> RemoteSession {
         try await RemoteSession.open(
             host: "127.0.0.1",
-            port: tv.port,
+            port: port,
             identity: try Self.clientIdentity.get(),
             startTimeout: startTimeout,
             silenceTimeout: silenceTimeout
@@ -459,6 +481,54 @@ private final class FakeRemoteTV: @unchecked Sendable {
                 context.write(wrapOutboundOut(ByteBuffer(bytes: Framing.frame(payload))), promise: nil)
             }
             context.flush()
+        }
+    }
+}
+
+/// A TV on its way down, on 127.0.0.1: it accepts the TCP connection and drops it as soon as the client's
+/// first handshake message arrives, so the client is in the middle of the TLS handshake. With `reset` it sends a
+/// TCP reset instead of closing normally.
+private final class DroppingTV {
+    let port: Int
+    private let server: Channel
+
+    private init(server: Channel) {
+        self.server = server
+        port = server.localAddress!.port!
+    }
+
+    static func start(reset: Bool) throws -> DroppingTV {
+        let server = try ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+            .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
+            .childChannelInitializer { channel in
+                channel.eventLoop.makeCompletedFuture {
+                    try channel.pipeline.syncOperations.addHandler(Dropper(reset: reset))
+                }
+            }
+            .bind(host: "127.0.0.1", port: 0)
+            .wait()
+        return DroppingTV(server: server)
+    }
+
+    func close() {
+        server.close(promise: nil)
+    }
+
+    private final class Dropper: ChannelInboundHandler {
+        typealias InboundIn = ByteBuffer
+
+        private let reset: Bool
+
+        init(reset: Bool) {
+            self.reset = reset
+        }
+
+        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+            if reset, let socket = context.channel as? SocketOptionProvider {
+                // A zero linger time makes close() send a reset. On the event loop this takes effect at once.
+                _ = socket.setSoLinger(linger(l_onoff: 1, l_linger: 0))
+            }
+            context.close(promise: nil)
         }
     }
 }

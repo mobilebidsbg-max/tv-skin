@@ -18,8 +18,9 @@ public struct VolumeInfo: Equatable {
 ///
 /// The app reports its lifecycle through `appBecameActive` and `appWentBackground`. While it is active the manager
 /// keeps one remote session open. When the TV can't be reached it tries again after 1, 2, 4 and 8 s, then every
-/// 10 s. It stops trying when the TV no longer knows this device (`.needsPairing`) or iOS blocks the local network
-/// (`.localNetworkDenied`). Commands sent while no session is open are dropped.
+/// 10 s. It stops trying when the TV no longer knows this device (`.needsPairing`, once a second attempt 1 s later
+/// confirms it) or iOS blocks the local network (`.localNetworkDenied`). Commands sent while no session is open are
+/// dropped.
 @MainActor
 @Observable
 public final class ConnectionManager {
@@ -57,6 +58,8 @@ public final class ConnectionManager {
     static let retryDelays: [TimeInterval] = [1, 2, 4, 8, 10]
     /// How long a TV gets after Wake-on-LAN before the next attempt.
     static let wakeDelay: TimeInterval = 3
+    /// The wait before checking a rejected certificate once more.
+    static let notPairedRecheckDelay: TimeInterval = 1
 
     public private(set) var state: State
     public private(set) var tv: PairedTV?
@@ -275,8 +278,8 @@ public final class ConnectionManager {
         }
     }
 
-    /// Attempts until a session opens, the TV rejects this device, the local network is blocked, or the task is
-    /// cancelled. Only the task in `connectTask` runs this: whatever replaces or clears it cancels it first.
+    /// Attempts until a session opens, the TV rejects this device twice in a row, the local network is blocked, or
+    /// the task is cancelled. Only the task in `connectTask` runs this: whatever replaces or clears it cancels it first.
     private func connect(to host: String, after firstDelay: TimeInterval?, failures: Int, waking mac: String?) async {
         if let mac {
             // A failed wake is not the end: the TV may wake anyway, or may not have been asleep.
@@ -284,6 +287,8 @@ public final class ConnectionManager {
         }
         var delay = firstDelay
         var failures = failures
+        /// The last attempt ended in `.notPaired`.
+        var rejected = false
         while true {
             if let delay { await wait(delay) }
             guard !Task.isCancelled else { return }
@@ -294,6 +299,12 @@ public final class ConnectionManager {
             } catch {
                 guard !Task.isCancelled else { return }
                 switch TVLinkError.map(error, port: TLSChannel.remotePort) {
+                case .notPaired where !rejected:
+                    // A TV in the middle of starting up can fail a handshake too: check once more before asking
+                    // the user to pair again. The state stays `.connecting`.
+                    rejected = true
+                    delay = Self.notPairedRecheckDelay
+                    continue
                 case .notPaired:
                     connectTask = nil
                     state = .needsPairing
@@ -304,6 +315,7 @@ public final class ConnectionManager {
                     return
                 default:
                     // TV off, Wi-Fi blip, a dropped handshake: all worth another try.
+                    rejected = false
                     state = .unreachable
                     if wokeWhileConnecting {
                         // Power woke the TV during this attempt: wait as after a wake, then back off from the start.

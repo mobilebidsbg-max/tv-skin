@@ -237,9 +237,7 @@ private final class MessageHandler: ChannelDuplexHandler {
     }
 
     private func mapped(_ error: Error) -> TVLinkError {
-        let mapped = TVLinkError.map(error, port: port)
-        // The TV rejects an unpaired certificate before it sends anything; a drop after that is a plain close.
-        return mapped == .notPaired && receivedMessage ? .closed : mapped
+        TVLinkError.map(error, port: port, afterMessage: receivedMessage)
     }
 }
 

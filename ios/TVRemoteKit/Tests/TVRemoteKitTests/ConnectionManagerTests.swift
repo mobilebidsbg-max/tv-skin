@@ -1,4 +1,6 @@
 import Foundation
+import NIOCore
+import NIOSSL
 import XCTest
 @testable import TVRemoteKit
 
@@ -70,23 +72,75 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertEqual(link.openedHosts.count, 7)
     }
 
-    func testNotPairedGoesToNeedsPairingWithoutRetry() async {
+    func testNotPairedTwiceInARowGoesToNeedsPairingWithoutMoreRetries() async {
         let manager = makeManager()
-        link.openResults = [.failure(.notPaired)]
+        link.openResults = [.failure(.notPaired), .failure(.notPaired)]
 
         manager.appBecameActive()
         await waitForEnd(of: manager.connectTask)
 
+        // One check 1 s after the first rejection, then pairing.
         XCTAssertEqual(manager.state, .needsPairing)
-        XCTAssertEqual(link.openedHosts.count, 1)
-        XCTAssertEqual(clock.delays, [])
+        XCTAssertEqual(link.openedHosts.count, 2)
+        XCTAssertEqual(clock.delays, [1])
 
         // Coming back to the app does not retry either: only pairing helps.
         manager.appWentBackground()
         manager.appBecameActive()
         XCTAssertNil(manager.connectTask)
         XCTAssertEqual(manager.state, .needsPairing)
+        XCTAssertEqual(link.openedHosts.count, 2)
+    }
+
+    func testOneNotPairedIsCheckedAgainAfterOneSecond() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.notPaired)]
+
+        manager.appBecameActive()
+
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(clock.delays, [1])
+        XCTAssertEqual(link.openedHosts.count, 2)
+    }
+
+    func testWhileANotPairedIsCheckedTheStateStaysConnecting() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.notPaired)]
+        clock.holds = true
+
+        manager.appBecameActive()
+
+        await waitUntil { self.clock.delays == [1] }
+        XCTAssertEqual(manager.state, .connecting)
         XCTAssertEqual(link.openedHosts.count, 1)
+    }
+
+    func testNotPairedOnlyCountsWhenTheAttemptsInARowAreRejected() async {
+        let manager = makeManager()
+        link.openResults = [.failure(.notPaired), .failure(.unreachable), .failure(.notPaired)]
+
+        manager.appBecameActive()
+
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(link.openedHosts.count, 4)
+        XCTAssertEqual(clock.delays, [1, 1, 1])
+    }
+
+    /// A TV that goes to standby, reboots or wakes up while the app connects resets the connection or hangs up
+    /// in the handshake. The app backs off and tries again; it does not ask to pair again.
+    func testDroppedHandshakesBackOffInsteadOfAskingToPair() async {
+        let manager = makeManager()
+        link.openErrors = [
+            IOError(errnoCode: ECONNRESET, reason: "read"),
+            NIOSSLError.handshakeFailed(.sslError([.eofDuringHandshake])),
+            NIOSSLError.uncleanShutdown,
+        ]
+
+        manager.appBecameActive()
+
+        await waitUntil { manager.state == .connected(tvOn: true) }
+        XCTAssertEqual(clock.delays, [1, 2, 4])
+        XCTAssertEqual(link.openedHosts.count, 4)
     }
 
     func testBackgroundThenActiveReconnectsExactlyOnce() async throws {
@@ -399,7 +453,7 @@ final class ConnectionManagerTests: XCTestCase {
 
     func testPairingAgainAfterNeedsPairingReplacesTheTV() async {
         let manager = makeManager()
-        link.openResults = [.failure(.notPaired)]
+        link.openResults = [.failure(.notPaired), .failure(.notPaired)]
         manager.appBecameActive()
         await waitForEnd(of: manager.connectTask)
         XCTAssertEqual(manager.state, .needsPairing)
@@ -409,7 +463,7 @@ final class ConnectionManagerTests: XCTestCase {
 
         await waitUntil { manager.state == .connected(tvOn: true) }
         XCTAssertEqual(store.tv?.name, "Living room")
-        XCTAssertEqual(link.openedHosts.count, 2)
+        XCTAssertEqual(link.openedHosts.count, 3)
     }
 
     func testForgetTVClosesTheSessionAndClearsTheStore() async throws {
@@ -508,10 +562,11 @@ final class ConnectionManagerTests: XCTestCase {
 
 // MARK: - Fakes
 
-/// A TV link that follows a script. Once `openResults` runs out the TV answers every open with a session
-/// that is up and on. While `holdsOpens` is set, opens wait for `releaseOpens()`. Every pairing uses
-/// `pairingChannel`; wakes go to `waker`.
+/// A TV link that follows a script. Opens first throw `openErrors` (raw errors, as NIO throws them), then follow
+/// `openResults`; once both run out the TV answers every open with a session that is up and on. While
+/// `holdsOpens` is set, opens wait for `releaseOpens()`. Every pairing uses `pairingChannel`; wakes go to `waker`.
 final class FakeLink: TVLinking {
+    var openErrors: [Error] = []
     var openResults: [Result<FakeChannel, TVLinkError>] = []
     var holdsOpens = false
     private var heldOpens: [CheckedContinuation<Void, Never>] = []
@@ -530,6 +585,7 @@ final class FakeLink: TVLinking {
             await withCheckedContinuation { heldOpens.append($0) }
             if Task.isCancelled { cancelledOpens += 1 }
         }
+        if !openErrors.isEmpty { throw openErrors.removeFirst() }
         let channel = try openResults.isEmpty ? FakeChannel() : openResults.removeFirst().get()
         channels.append(channel)
         return channel
