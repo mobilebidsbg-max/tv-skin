@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  TV Remote app icon, option C "Ripple" (from docs/design/mockup-remote.html), drawn at 1024x1024.
+    icon.html            light / dark icon: radial black background, orange ripple
+    icon.html?tinted     tinted icon: grayscale, transparent background
+  render.sh writes the PNGs into the asset catalog.
+-->
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; }
+  svg { display: block; width: 1024px; height: 1024px; }
+</style>
+<body>
+<script>
+const TINTED = location.search.includes('tinted');
+// Tinted: iOS colours the picture by its brightness, so the lit dots are white (not the grey of orange)
+// and the idle dots a little lighter, to stay visible on the dark tinted background.
+const O = TINTED ? '#FFFFFF' : '#D97757';
+const IDLE = TINTED ? '#48484a' : '#2c2c2e';
+
+// 9x9 grid of dots between `pad` and 1024 - pad.
+function grid(n, pad, fn) {
+  let s = '';
+  const step = (1024 - 2 * pad) / (n - 1);
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const x = pad + c * step, y = pad + r * step;
+      const d = fn(r, c, x, y);
+      if (d) s += d;
+    }
+  }
+  return s;
+}
+
+const background = TINTED ? '' : '<rect width="1024" height="1024" fill="url(#bgG)"/>';
+const ripple = grid(9, 152, (r, c, x, y) => {
+  const d = Math.hypot(x - 512, y - 512);
+  const t = Math.max(0, 1 - d / 360);
+  return t > 0.02
+    ? `<circle cx="${x}" cy="${y}" r="${14 + 16 * t}" fill="${O}" fill-opacity="${(0.15 + 0.85 * t * t).toFixed(2)}"/>`
+    : `<circle cx="${x}" cy="${y}" r="14" fill="${IDLE}"/>`;
+});
+
+document.body.innerHTML = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgG" cx="50%" cy="28%" r="80%"><stop offset="0" stop-color="#151515"/><stop offset="1" stop-color="#000"/></radialGradient>
+    <radialGradient id="halo"><stop offset="0" stop-color="${O}" stop-opacity=".55"/><stop offset="1" stop-color="${O}" stop-opacity="0"/></radialGradient>
+  </defs>
+  ${background}
+  <circle cx="512" cy="512" r="250" fill="url(#halo)"/>
+  ${ripple}
+</svg>`;
+</script>
+</body>
