@@ -122,6 +122,6 @@ struct RoundButtonStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Circle())
-            .hapticOnPressDown()
+            .hapticOnPressDown(configuration.isPressed)
     }
 }

@@ -74,24 +74,21 @@ enum Haptics {
     }
 }
 
-/// Fires `Haptics.button()` the moment a finger lands on a button, not after the button has redrawn as pressed.
+/// Fires `Haptics.button()` when a button turns pressed, which is when the finger lands. It follows the button's
+/// own pressed state: a gesture of its own on the label would take the touch, and the button's action would never run.
 private struct PressDownHaptic: ViewModifier {
-    @GestureState private var isDown = false
+    let isPressed: Bool
 
     func body(content: Content) -> some View {
-        content.simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isDown) { _, isDown, _ in
-                    if !isDown { Haptics.button() }
-                    isDown = true
-                }
-        )
+        content.onChange(of: isPressed) { _, down in
+            if down { Haptics.button() }
+        }
     }
 }
 
 extension View {
-    /// A soft tap on the iPhone at the moment of touch-down. Does not take the touch from the button it is on.
-    func hapticOnPressDown() -> some View {
-        modifier(PressDownHaptic())
+    /// A soft tap on the iPhone at touch-down. Call it in a `ButtonStyle` with `configuration.isPressed`.
+    func hapticOnPressDown(_ isPressed: Bool) -> some View {
+        modifier(PressDownHaptic(isPressed: isPressed))
     }
 }

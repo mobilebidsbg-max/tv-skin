@@ -93,7 +93,7 @@ struct SheetButtonStyle<S: Shape>: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.95 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
             .contentShape(shape)
-            .hapticOnPressDown()
+            .hapticOnPressDown(configuration.isPressed)
     }
 }
 
@@ -105,6 +105,6 @@ struct TileButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
             .contentShape(Rectangle())
-            .hapticOnPressDown()
+            .hapticOnPressDown(configuration.isPressed)
     }
 }
