@@ -1,6 +1,5 @@
 import SwiftUI
 import TVRemoteKit
-import UIKit
 
 @main
 struct TVRemoteApp: App {
@@ -41,13 +40,17 @@ struct TVRemoteApp: App {
         DemoMode.current == nil ? TVDiscovery() : DemoFinder()
     }
 
+    /// How this iPhone is named on the TV. `UIDevice.current.name` is just "iPhone" since iOS 16, so a fixed name
+    /// says more.
+    private static let clientName = "TV Remote (iPhone)"
+
     /// A demo launch argument (see `DemoMode`) swaps the real link for `DemoLink`, so the UI works without a TV.
     private static func makeConnection() -> ConnectionManager {
         if let demo = DemoMode.current {
             return ConnectionManager(link: demo.link, store: demo.store)
         }
         return ConnectionManager(
-            link: LiveLink(identityStore: KeychainIdentityStore(), clientName: UIDevice.current.name),
+            link: LiveLink(identityStore: KeychainIdentityStore(), clientName: clientName),
             store: UserDefaultsPairedTVStore()
         )
     }
