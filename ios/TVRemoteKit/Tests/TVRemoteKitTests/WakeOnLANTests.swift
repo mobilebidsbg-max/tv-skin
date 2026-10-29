@@ -1,5 +1,6 @@
+import Foundation
 import XCTest
-import TVRemoteKit
+@testable import TVRemoteKit
 
 final class WakeOnLANTests: XCTestCase {
     func testWakePacket() throws {
@@ -23,5 +24,64 @@ final class WakeOnLANTests: XCTestCase {
         XCTAssertThrowsError(try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:zz"))
         XCTAssertThrowsError(try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b:00"))
         XCTAssertThrowsError(try WakeOnLAN.packet(mac: "440:f:b4:88:a4:9b"))
+    }
+
+    func testUnicastSendsThePacketToTheHost() async throws {
+        let receiver = try UDPReceiver()
+        defer { receiver.close() }
+
+        try await WakeOnLAN.send(mac: "44:0f:b4:88:a4:9b", to: "127.0.0.1", port: receiver.port)
+
+        XCTAssertEqual(try receiver.receive(), try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b"))
+    }
+
+    func testUnicastRejectsAHostThatIsNotAnIPv4Address() async {
+        do {
+            try await WakeOnLAN.send(mac: "44:0f:b4:88:a4:9b", to: "tv.local")
+            XCTFail("expected invalidHost")
+        } catch {
+            XCTAssertEqual(error as? WakeOnLANError, .invalidHost("tv.local"))
+        }
+    }
+}
+
+/// A UDP socket on 127.0.0.1 at a free port that waits up to 2 s for one datagram.
+private final class UDPReceiver {
+    let port: UInt16
+    private let descriptor: Int32
+
+    init() throws {
+        let descriptor = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+        guard descriptor >= 0 else { throw WakeOnLANError.socket(errno) }
+        var address = sockaddr_in()
+        address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        var length = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafeMutablePointer(to: &address) { pointer in
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(descriptor, $0, length) == 0 && getsockname(descriptor, $0, &length) == 0
+            }
+        }
+        guard bound else {
+            let error = errno
+            Darwin.close(descriptor)
+            throw WakeOnLANError.socket(error)
+        }
+        self.descriptor = descriptor
+        port = UInt16(bigEndian: address.sin_port)
+        var timeout = timeval(tv_sec: 2, tv_usec: 0)
+        setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+    }
+
+    func receive() throws -> [UInt8] {
+        var buffer = [UInt8](repeating: 0, count: 512)
+        let count = recv(descriptor, &buffer, buffer.count, 0)
+        guard count >= 0 else { throw WakeOnLANError.socket(errno) }
+        return Array(buffer[..<count])
+    }
+
+    func close() {
+        Darwin.close(descriptor)
     }
 }
