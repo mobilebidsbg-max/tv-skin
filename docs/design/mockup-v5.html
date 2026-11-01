@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TV skin · v5 (less on screen, glass clock)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap" rel="stylesheet">
+<style>
+/* v5: the v4 home with football and Ask removed, one apps row, a Netflix/HBO strip, and a glass-clock screensaver.
+   Design size 1920x1080 px; on the TV, px / 2 = dp. Keys: arrows move, Enter on Sleep cycles it, S = screensaver, Esc = home. */
+:root{--ui:Inter,-apple-system,"SF Pro Display",system-ui,sans-serif;--ease:cubic-bezier(.2,.8,.2,1)}
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+*{box-sizing:border-box}
+.screen{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;font-family:var(--ui);color:#fff;-webkit-font-smoothing:antialiased;user-select:none;background:#0b0907;font-feature-settings:"cv11","ss01"}
+.wall{position:absolute;inset:0;background:url(assets/wall-dune.jpg) center/cover no-repeat}
+.scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,0) 14%)}
+.f{position:relative;transition:transform .28s var(--ease),box-shadow .28s,background .28s,color .2s}
+svg.s{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* glass only where text sits */
+.frost{position:absolute;left:-60px;top:250px;width:1400px;height:420px;pointer-events:none;backdrop-filter:blur(26px) saturate(112%) brightness(.85);-webkit-backdrop-filter:blur(26px) saturate(112%) brightness(.85);mask-image:radial-gradient(52% 60% at 36% 58%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(52% 60% at 36% 58%,#000 30%,transparent 100%)}
+.band{position:absolute;left:0;top:600px;width:1920px;height:480px;pointer-events:none;backdrop-filter:blur(40px) saturate(130%);-webkit-backdrop-filter:blur(40px) saturate(130%);background:linear-gradient(180deg,rgba(14,10,6,0) 0,rgba(14,10,6,.3) 150px,rgba(14,10,6,.5) 100%);mask-image:linear-gradient(180deg,transparent 0,#000 130px);-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 130px)}
+
+/* hero */
+.hero{position:absolute;left:120px;top:320px}
+.hello{font-size:62px;font-weight:650;letter-spacing:-1.6px;line-height:1;margin:0 0 14px;text-shadow:0 2px 24px rgba(0,0,0,.3)}
+.hline{display:flex;align-items:center;gap:14px;font-size:26px;font-weight:450;margin:0;opacity:.88;text-shadow:0 2px 14px rgba(0,0,0,.35);font-variant-numeric:tabular-nums}
+.hline svg{width:30px;height:30px}
+.hline i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55}
+.smart{display:flex;gap:16px;margin-top:30px}
+.sc{height:96px;border-radius:28px;padding:0 30px 0 14px;display:flex;align-items:center;gap:18px;background:rgba(24,16,10,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.sc b{display:block;font-size:24px;font-weight:600;white-space:nowrap}
+.sc small{display:block;font-size:18px;opacity:.7;margin-top:4px;white-space:nowrap}
+.sc .ico{width:68px;height:68px;border-radius:20px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.12)}
+.sc .ico svg{width:32px;height:32px}
+.sc .th{width:116px;height:66px;border-radius:15px;flex:none;display:grid;place-items:center;background:#fff}
+.sc .th svg{width:46px;height:33px}
+.sc.focused{transform:scale(1.06);background:rgba(255,255,255,.94);color:#1b130c;box-shadow:0 24px 48px -16px rgba(0,0,0,.6)}
+.sc.focused .ico{background:rgba(27,19,12,.08)}
+
+/* apps row */
+.rowwrap{position:absolute;left:0;right:0;overflow:visible}
+.row{position:absolute;left:120px;display:flex;gap:30px;transition:transform .5s var(--ease)}
+.apps{top:648px}
+.tile{width:230px;height:130px;flex:none;border-radius:28px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;box-shadow:0 12px 30px -14px rgba(0,0,0,.6)}
+.tile .nm{color:#fff;position:absolute;left:-20px;right:-20px;top:calc(100% + 14px);text-align:center;font-size:20px;font-weight:550;opacity:0;transition:opacity .25s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.focused{transform:scale(1.1);box-shadow:0 28px 56px -12px rgba(0,0,0,.7)}
+.tile.focused .nm{opacity:1}
+.tile.gap{margin-left:22px}
+.t-yt{background:#fff;color:#0f0f0f}.t-yt svg{width:62px;height:44px}
+.t-nf{background:#000;color:#e50914;font-size:40px;font-weight:800;letter-spacing:2px}
+.t-mx{background:linear-gradient(135deg,#002be7,#5b00e0);font-size:44px;font-weight:700;letter-spacing:-1.5px}
+.t-pv{background:#0f171e;font-size:30px;flex-direction:column;gap:0;line-height:1}
+.t-pv small{display:block;width:84px;height:8px;margin-top:8px;border-radius:0 0 50px 50px;border-bottom:4px solid #1399ff}
+.t-dp{background:linear-gradient(140deg,#0b2f6b,#0a1a3a 70%);font-size:36px;font-weight:600;font-style:italic;letter-spacing:-.5px}
+.t-atv{background:#0b0b0d;font-size:34px;font-weight:600;letter-spacing:-.5px}
+.t-atv svg{width:30px;height:36px;margin-top:-6px}
+.t-ym{background:#0f0f0f}.t-ym svg{width:58px;height:58px}
+.t-sys{background:rgba(255,255,255,.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);flex-direction:column;gap:8px;font-size:21px;font-weight:550;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 12px 30px -14px rgba(0,0,0,.5)}
+.t-sys svg{width:40px;height:40px}
+.t-sys.sq{width:130px}
+.t-sys.focused{background:rgba(255,255,255,.93);color:#1b130c}
+
+/* Netflix / HBO Max strip */
+.slabel{position:absolute;left:124px;top:836px;font-size:21px;font-weight:550;opacity:.72;display:flex;gap:12px;align-items:center}
+.slabel em{font-style:normal;font-weight:800;color:#e50914;letter-spacing:1px}
+.slabel u{text-decoration:none;font-weight:700;letter-spacing:-.5px;background:linear-gradient(135deg,#6f8cff,#a879ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.strip{top:874px;gap:26px}
+.pc{width:420px;height:156px;flex:none;border-radius:26px;overflow:hidden;background:#111 center/cover no-repeat;box-shadow:0 14px 34px -16px rgba(0,0,0,.7)}
+.pc::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.62) 0,rgba(0,0,0,.18) 60%,rgba(0,0,0,0))}
+.pc>*{position:relative;z-index:1}
+.pc .brand{position:absolute;left:22px;top:18px;text-shadow:0 1px 10px rgba(0,0,0,.5);font-size:17px;font-weight:800;letter-spacing:1.5px}
+.pc .brand.n{color:#e50914}
+.pc .brand.m{font-size:22px;letter-spacing:-.5px;font-weight:700;color:#fff}
+.pc .tt{position:absolute;left:22px;bottom:40px;font-size:27px;font-weight:650;letter-spacing:-.4px}
+.pc .mt{position:absolute;left:22px;bottom:16px;font-size:17px;opacity:.78}
+.pc.focused{transform:scale(1.06);box-shadow:0 28px 56px -14px rgba(0,0,0,.75),0 0 0 3px rgba(255,255,255,.85)}
+
+/* screensaver */
+.saver{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .9s ease;z-index:20}
+.saver .wall2{position:absolute;inset:0;background:url(assets/wall-dune.jpg) center/cover no-repeat}
+.saver .vig{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 48%,rgba(0,0,0,0),rgba(0,0,0,.28))}
+.saver svg{position:absolute;inset:0}
+.sdate{position:absolute;left:0;right:0;top:688px;text-align:center;font-size:30px;font-weight:500;letter-spacing:.2px;opacity:.92;text-shadow:0 2px 18px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+.on-saver .saver{opacity:1;pointer-events:auto}
+.home{transition:opacity .6s}
+.on-saver .home{opacity:0}
+</style>
+</head>
+<body>
+<div class="screen" id="screen">
+  <div class="home">
+    <div class="wall"></div>
+    <div class="scrim"></div>
+    <div class="frost"></div>
+    <div class="band"></div>
+
+    <section class="hero">
+      <h1 class="hello" id="hello">Good evening</h1>
+      <p class="hline"><svg viewBox="0 0 24 24"><path fill="#f1ebe2" d="M19.5 14.8A8 8 0 1 1 9.2 4.5a6.4 6.4 0 0 0 10.3 10.3z"/></svg>9° and clear in Sofia <i></i><span id="hclock">21:40</span></p>
+      <div class="smart">
+        <div class="sc f" data-row="0"><span class="th"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 6v8l7-4z" fill="#fff"/></svg></span><span><b>Back to YouTube</b><small>Opened 20 min ago</small></span></div>
+        <div class="sc f" data-row="0"><span class="ico"><svg class="s" viewBox="0 0 24 24"><rect x="2.5" y="5" width="10.5" height="14" rx="2.2"/><rect x="15" y="5" width="6.5" height="14" rx="2.2"/></svg></span><span><b>Side by side</b><small>Two apps at once</small></span></div>
+        <div class="sc f" data-row="0" id="sleep"><span class="ico"><svg class="s" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span><b>Sleep</b><small id="sleepv">Off</small></span></div>
+      </div>
+    </section>
+
+    <div class="row apps" id="apps">
+      <div class="tile t-yt f" data-row="1"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 6v8l7-4z" fill="#fff"/></svg><span class="nm">YouTube</span></div>
+      <div class="tile t-nf f" data-row="1">NETFLIX<span class="nm">Netflix</span></div>
+      <div class="tile t-mx f" data-row="1">max<span class="nm">HBO Max</span></div>
+      <div class="tile t-pv f" data-row="1">prime video<small></small><span class="nm">Prime Video</span></div>
+      <div class="tile t-dp f" data-row="1">Disney+<span class="nm">Disney+</span></div>
+      <div class="tile t-atv f" data-row="1"><svg viewBox="0 0 17 20"><path fill="#fff" d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2.1-.9-3.4-.9C3.5 4.8 1.9 5.8 1 7.3c-1.9 3.2-.5 8 1.3 10.6.9 1.3 1.9 2.7 3.3 2.6 1.3-.1 1.8-.8 3.4-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.2-2.6 1-1.5 1.4-2.9 1.4-3-.1 0-2.9-1.1-2.9-4.3zM11.5 3c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.1.1 2.3-.6 3-1.5z"/></svg>tv<span class="nm">Apple TV</span></div>
+      <div class="tile t-ym f" data-row="1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ff0033"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#fff" stroke-width="1.2"/><path d="M10.3 9.4v5.2l4.4-2.6z" fill="#fff"/></svg><span class="nm">YouTube Music</span></div>
+      <div class="tile t-sys sq gap f" data-row="1"><svg class="s" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="12" rx="2.2"/><path d="M8.5 21h7M9 2.5l3 3 3-3"/></svg>Live TV</div>
+      <div class="tile t-sys sq f" data-row="1"><svg class="s" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg>HDMI 1</div>
+      <div class="tile t-sys sq f" data-row="1"><svg class="s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</div>
+    </div>
+
+    <div class="slabel"><em>NETFLIX</em>&amp;<u>max</u><span>· new and popular</span></div>
+    <div class="row strip" id="strip">
+      <div class="pc f" data-row="2" style="background-image:url(assets/v3-roadtrip.jpg)"><span class="brand n">NETFLIX</span><span class="tt">The Long Road</span><span class="mt">New series</span></div>
+      <div class="pc f" data-row="2" style="background-image:url(assets/v3-corridor.jpg)"><span class="brand m">max</span><span class="tt">Night Corridor</span><span class="mt">Season 2 · Now streaming</span></div>
+      <div class="pc f" data-row="2" style="background-image:url(assets/v3-album.jpg)"><span class="brand n">NETFLIX</span><span class="tt">Low Light Sessions</span><span class="mt">Music documentary</span></div>
+      <div class="pc f" data-row="2" style="background-image:url(assets/gen-ridges-1.png)"><span class="brand m">max</span><span class="tt">Ridgeline</span><span class="mt">Film</span></div>
+    </div>
+  </div>
+
+  <div class="saver">
+    <div class="wall2"></div>
+    <div class="vig"></div>
+    <svg viewBox="0 0 1920 1080" width="1920" height="1080" aria-hidden="true">
+      <defs>
+        <clipPath id="digits"><text id="t1" x="960" y="600" text-anchor="middle" font-family="Inter, -apple-system, sans-serif" font-size="330" font-weight="600" letter-spacing="-10">21:40</text></clipPath>
+        <filter id="wblur" x="0" y="0" width="100%" height="100%"><feGaussianBlur stdDeviation="16"/><feComponentTransfer><feFuncR type="linear" slope="1.25" intercept=".06"/><feFuncG type="linear" slope="1.25" intercept=".06"/><feFuncB type="linear" slope="1.25" intercept=".06"/></feComponentTransfer></filter>
+        <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="20"/><feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer></filter>
+        <filter id="bevel" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="b"/><feSpecularLighting in="b" surfaceScale="5" specularConstant=".95" specularExponent="24" lighting-color="#fff" result="sp"><feDistantLight azimuth="240" elevation="52"/></feSpecularLighting><feComposite in="sp" in2="SourceAlpha" operator="in"/></filter>
+      </defs>
+      <use href="#t1" filter="url(#shadow)" fill="#000"/>
+      <g clip-path="url(#digits)">
+        <image href="assets/wall-dune.jpg" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice" filter="url(#wblur)"/>
+        <rect width="1920" height="1080" fill="#fff" opacity=".3"/>
+      </g>
+      <use href="#t1" fill="#fff" filter="url(#bevel)" opacity="1"/>
+    </svg>
+    <div class="sdate" id="sdate">Sunday, 1 November · 9° clear</div>
+  </div>
+</div>
+
+<script>
+const screen = document.getElementById('screen');
+function fit(){ const s = Math.min(innerWidth/1920, innerHeight/1080); screen.style.transform = `scale(${s})`;
+  screen.style.left = (innerWidth-1920*s)/2+'px'; screen.style.top = (innerHeight-1080*s)/2+'px'; }
+addEventListener('resize', fit); fit();
+
+const rows = [0,1,2].map(r => [...document.querySelectorAll(`.f[data-row="${r}"]`)]);
+const rowEl = [null, document.getElementById('apps'), document.getElementById('strip')];
+let fr = 1, fc = 0;
+function focus(r, c){
+  fr = r; fc = Math.max(0, Math.min(c, rows[r].length-1));
+  document.querySelectorAll('.focused').forEach(e => e.classList.remove('focused'));
+  const el = rows[fr][fc]; el.classList.add('focused');
+  [1,2].forEach(i => { if (!rowEl[i]) return;
+    if (i !== fr) { rowEl[i].style.transform = ''; return; }
+    const right = el.offsetLeft + el.offsetWidth + 120;
+    rowEl[i].style.transform = `translateX(${-Math.max(0, right - 1800)}px)`; });
+}
+const sleepSteps = ['Off','30 min','60 min','90 min']; let sleepIx = 0;
+addEventListener('keydown', e => {
+  const k = e.key;
+  if (k === 's' || k === 'S') { screen.classList.toggle('on-saver'); return; }
+  if (k === 'Escape') { screen.classList.remove('on-saver'); return; }
+  if (screen.classList.contains('on-saver')) { screen.classList.remove('on-saver'); return; }
+  if (k === 'ArrowRight') focus(fr, fc+1);
+  else if (k === 'ArrowLeft') focus(fr, fc-1);
+  else if (k === 'ArrowUp' && fr > 0) focus(fr-1, fr-1 === 0 ? Math.min(fc, 2) : fc);
+  else if (k === 'ArrowDown' && fr < 2) focus(fr+1, fc);
+  else if (k === 'Enter' && rows[fr][fc].id === 'sleep') { sleepIx = (sleepIx+1) % 4; document.getElementById('sleepv').textContent = sleepSteps[sleepIx]; }
+  else return;
+  e.preventDefault();
+});
+
+// Clock and greeting from the real time; ?t=21:40 pins the time for screenshots.
+const pin = new URLSearchParams(location.search).get('t');
+function tick(){
+  const now = new Date();
+  const hm = pin || now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  const h = +hm.split(':')[0];
+  document.getElementById('hello').textContent = h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('hclock').textContent = hm;
+  document.getElementById('t1').textContent = hm;
+  document.getElementById('sdate').textContent = now.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'}) + ' · 9° clear';
+}
+tick(); setInterval(tick, 15000);
+
+const view = location.hash.slice(1);
+if (view === 'saver') screen.classList.add('on-saver');
+focus(view === 'end' ? 1 : (view === 'strip' ? 2 : 1), view === 'end' ? 99 : 0);
+</script>
+</body>
+</html>
