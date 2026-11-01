@@ -16,6 +16,10 @@ import com.dzafirov.tvskin.home.HomeActions
 import com.dzafirov.tvskin.home.HomeModel
 import com.dzafirov.tvskin.home.HomeScreen
 import com.dzafirov.tvskin.home.Tab
+import com.dzafirov.tvskin.lastapp.IGNORED_PACKAGES
+import com.dzafirov.tvskin.lastapp.LastAppStore
+import com.dzafirov.tvskin.lastapp.openedAgo
+import com.dzafirov.tvskin.lastapp.pickLastApp
 import com.dzafirov.tvskin.ui.TvSkinTheme
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
@@ -25,13 +29,15 @@ class MainActivity : ComponentActivity(), HomeActions {
     private lateinit var launcher: AppLauncher
     private lateinit var prefs: AppPrefs
     private lateinit var repo: AppRepository
+    private lateinit var lastApps: LastAppStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = AppPrefs(this)
         repo = AppRepository(this)
         model = HomeModel(this, prefs, repo)
-        launcher = AppLauncher(this)
+        lastApps = LastAppStore(this)
+        launcher = AppLauncher(this, onLaunched = { lastApps.record(it) })
         model.tick()
         // This is the home screen: Back has nowhere to go.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) { override fun handleOnBackPressed() = Unit })
@@ -53,6 +59,17 @@ class MainActivity : ComponentActivity(), HomeActions {
         super.onResume()
         model.refreshApps()
         model.tick()
+        refreshLastApp()
+    }
+
+    /** "Back to <app>": the newest app opened from here or (with usage access) anywhere. */
+    private fun refreshLastApp() {
+        val installed = repo.apps()
+        val recent = lastApps.recent()
+        val pkg = pickLastApp(recent.map { it.first }, packageName, IGNORED_PACKAGES, installed.map { it.id }.toSet())
+        val entry = installed.firstOrNull { it.id == pkg }
+        val time = recent.firstOrNull { it.first == pkg }?.second
+        model.update { it.copy(lastApp = entry, lastAppSubtitle = time?.let { t -> openedAgo(System.currentTimeMillis(), t) }) }
     }
 
     private fun soon(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
