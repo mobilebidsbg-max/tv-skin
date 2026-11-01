@@ -13,8 +13,17 @@ Connect first: `adb connect 192.168.8.16:5555`. Every command below is run from 
 | 5 | Media-session access (only for the "now playing" pill; reads no notifications) | `shell cmd notification allow_listener com.dzafirov.tvskin/com.dzafirov.tvskin.media.MediaListener` | `shell cmd notification disallow_listener com.dzafirov.tvskin/com.dzafirov.tvskin.media.MediaListener` |
 | 4 | Screensaver: the TV Skin clock (corner clock + weather on the Dune wallpaper) | `shell settings put secure screensaver_components com.dzafirov.tvskin/.dream.ClockDream` (it was `null` before, meaning Google's default) | `shell settings delete secure screensaver_components` |
 
-**Not changed yet:**
-- The Home button still opens Google's home screen. Making TV Skin the home screen is a separate step that waits for Dimitar's OK.
+| 6 | TV Skin is the home screen (Dimitar's OK, 2026-11-01) | `shell cmd role add-role-holder android.app.role.HOME com.dzafirov.tvskin 0` (before: `com.google.android.apps.tv.launcherx`) | `shell cmd role add-role-holder android.app.role.HOME com.google.android.apps.tv.launcherx 0` |
+| 7 | Google's home screen switched off for user 0 (Home ignored the role while it was on) | `shell pm disable-user --user 0 com.google.android.apps.tv.launcherx` | `shell pm enable com.google.android.apps.tv.launcherx` |
+| 8 | Google's setup app switched off for user 0. Its "RecoveryActivity" catches Home when the launcher is off, and Android doesn't let adb switch off a single screen of another app. | `shell pm disable-user --user 0 com.google.android.tungsten.setupwraith` | `shell pm enable com.google.android.tungsten.setupwraith` |
+
+**Full undo of the home-screen switch:** run the undo of 8, 7 and 6, then press Home. A factory reset also restores everything.
+
+**What happened while switching (2026-11-01 23:58):**
+- Right after change 8 the TV went into standby (it did not reboot; uptime stayed 21 days).
+- On waking it didn't rejoin Wi-Fi by itself until Dimitar connected it.
+- After a full restart (`adb reboot`) it starts straight into TV Skin, rejoins Wi-Fi `A1_FB646F` by itself, and Home opens TV Skin.
+
 - `screensaver_enabled` was already `1`; it was left as it was.
 
 **Updating the app (release build, used since 2026-11-01):**
