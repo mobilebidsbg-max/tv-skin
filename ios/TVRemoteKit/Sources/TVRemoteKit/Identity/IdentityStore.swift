@@ -7,13 +7,37 @@ public protocol IdentityStore {
     func save(_ identity: ClientIdentity) throws
 }
 
+/// How `loadOrCreateReporting()` got the identity.
+public enum IdentityOrigin: Equatable {
+    /// The saved identity.
+    case loaded
+    /// None was saved: a new one was generated and saved.
+    case created
+    /// The saved identity used the shared name `CN=atvremote`, so a new one with its own name replaced it.
+    /// The device has to pair again.
+    case replacedSharedName
+}
+
 extension IdentityStore {
     /// Returns the saved identity; on first use generates one and saves it.
     public func loadOrCreate() throws -> ClientIdentity {
-        if let existing = try load() { return existing }
+        try loadOrCreateReporting().identity
+    }
+
+    /// Like `loadOrCreate()`, and says where the identity came from.
+    /// A saved identity with the shared name `CN=atvremote` is replaced by a new one with its own name, because the
+    /// TV keeps only one pairing per name and devices sharing it unpaired each other.
+    public func loadOrCreateReporting() throws -> (identity: ClientIdentity, how: IdentityOrigin) {
+        let how: IdentityOrigin
+        if let existing = try load() {
+            guard try existing.usesSharedLegacyName() else { return (existing, .loaded) }
+            how = .replacedSharedName
+        } else {
+            how = .created
+        }
         let created = try ClientIdentity.generate()
         try save(created)
-        return created
+        return (created, how)
     }
 }
 

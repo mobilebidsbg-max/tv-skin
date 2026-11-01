@@ -13,8 +13,19 @@ public struct ClientIdentity: Codable, Equatable {
         self.privateKeyPEM = privateKeyPEM
     }
 
+    /// The common name every identity used before 2026-11-01. The TV keeps one pairing per common name, so all
+    /// devices sharing it unpaired each other (TV log: "KeyStoreManager: Deleting entry for … (CN=atvremote)").
+    public static let sharedLegacyCommonName = "atvremote"
+
+    /// A common name of its own for a new identity: "atvremote-" and 8 random hex digits.
+    public static func uniqueCommonName() -> String {
+        String(format: "atvremote-%08x", UInt32.random(in: .min ... .max))
+    }
+
     /// Generates a new key and a certificate valid from one day ago (clock-skew margin) to 20 years ahead.
-    public static func generate(commonName: String = "atvremote") throws -> ClientIdentity {
+    /// Without a `commonName`, the certificate gets a unique one (see `uniqueCommonName()`).
+    public static func generate(commonName: String? = nil) throws -> ClientIdentity {
+        let commonName = commonName ?? uniqueCommonName()
         let key = try _RSA.Signing.PrivateKey(keySize: .bits2048)
         let certificateKey = Certificate.PrivateKey(key)
         let name = try DistinguishedName { CommonName(commonName) }
@@ -36,6 +47,12 @@ public struct ClientIdentity: Codable, Equatable {
             certificatePEM: try certificate.serializeAsPEM().pemString,
             privateKeyPEM: key.pemRepresentation
         )
+    }
+
+    /// True when the certificate's subject is exactly `CN=atvremote`, the name every device used to share.
+    public func usesSharedLegacyName() throws -> Bool {
+        let certificate = try Certificate(pemEncoded: certificatePEM)
+        return certificate.subject == (try DistinguishedName { CommonName(Self.sharedLegacyCommonName) })
     }
 
     /// The RSA numbers of the certificate's public key, as the pairing secret needs them.

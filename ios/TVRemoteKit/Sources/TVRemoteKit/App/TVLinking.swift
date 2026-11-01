@@ -95,14 +95,16 @@ public struct LiveLink: TVLinking {
     /// Logs which, and any failure.
     static func identity(from store: IdentityStore) throws -> ClientIdentity {
         do {
-            if let saved = try store.load() {
+            let result = try store.loadOrCreateReporting()
+            switch result.how {
+            case .loaded:
                 Log.link.debug("Loaded the client identity")
-                return saved
+            case .created:
+                Log.link.notice("Created and saved a new client identity")
+            case .replacedSharedName:
+                Log.link.notice("Replaced the client identity named CN=atvremote with one of its own; pair again")
             }
-            let created = try ClientIdentity.generate()
-            try store.save(created)
-            Log.link.notice("Created and saved a new client identity")
-            return created
+            return result.identity
         } catch {
             Log.link.error("Client identity failed: \(String(describing: error), privacy: .public)")
             throw error
