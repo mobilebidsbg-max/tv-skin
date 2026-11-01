@@ -81,9 +81,7 @@ private fun NowPlayingPill(np: NowPlaying?, wallpaper: Wallpaper, onOpen: () -> 
             if (art != null) {
                 Image(art.asImageBitmap(), null, Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
             } else {
-                Box(Modifier.size(22.dp).clip(RoundedCornerShape(6.dp))) {
-                    LocalAppArt.current.Art(AppEntry(YT_MUSIC, "YouTube Music", AppEntry.Kind.APP), Modifier)
-                }
+                Image(painterResource(R.drawable.ic_ytmusic), null, Modifier.size(22.dp))
             }
             Text(np?.title ?: "YouTube Music", style = TvType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 150.dp))
             val artist = np?.artist ?: "Play something"
