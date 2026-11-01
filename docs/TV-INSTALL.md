@@ -18,7 +18,7 @@ Connect first: `adb connect 192.168.8.16:5555`. Every command below is run from 
 | 8 | Google's setup app switched off for user 0. Its "RecoveryActivity" catches Home when the launcher is off, and Android doesn't let adb switch off a single screen of another app. | `shell pm disable-user --user 0 com.google.android.tungsten.setupwraith` | `shell pm enable com.google.android.tungsten.setupwraith` |
 
 | 9 | Free-form windows switched on (side by side), then a reboot | `shell settings put global enable_freeform_support 1` and `shell settings put global force_resizable_activities 1` (both were `null`) | `shell settings delete global enable_freeform_support`, `shell settings delete global force_resizable_activities`, reboot |
-| 10 | Key service "TV Skin side by side" (accessibility, key filtering only; it acts only while side by side is on) | `shell settings put secure enabled_accessibility_services com.dzafirov.tvskin/com.dzafirov.tvskin.split.SplitKeys` and `shell settings put secure accessibility_enabled 1` (before: empty and `0`) | `shell settings delete secure enabled_accessibility_services` and `shell settings put secure accessibility_enabled 0` |
+| 10 | Key service "TV Skin side by side" (accessibility, key filtering only; it acts only while side by side is on). Updating the app switches it off; TV Skin switches it back on by itself when side by side starts. | `shell settings put secure enabled_accessibility_services com.dzafirov.tvskin/com.dzafirov.tvskin.split.SplitKeys` and `shell settings put secure accessibility_enabled 1` (before: empty and `0`) | `shell settings delete secure enabled_accessibility_services` and `shell settings put secure accessibility_enabled 0` |
 | 11 | TV Skin's own adb key, approved on the TV with "Always allow", so the launcher can open windows, resize and mute them without the Mac | First side by side from the TV shows "Allow USB debugging? TV Skin@tv" | TV Settings → Developer options → Revoke USB debugging authorizations (this also revokes the Mac's) |
 
 **Full undo of the home-screen switch:** run the undo of 8, 7 and 6, then press Home. A factory reset also restores everything.
@@ -40,6 +40,18 @@ This works over Wi-Fi, needs no cable, and keeps all settings.
 **Netflix/HBO titles:** put `TMDB_API_KEY=…` in the repo's `.env`, then update the app. Without a key the strip shows the two apps' banners.
 
 **Starting the screensaver now (for testing):** `shell am start -a com.google.android.pano.action.SLEEP`
+
+## Side by side (checked on the TV, 2026-11-02, with remote-protocol keys like the iPhone's)
+
+- **Opening:**
+  - Side by side → first app → second app;
+  - the windows land at 50/50 (`[48,196][948,702]` and `[972,196][1872,702]`);
+  - YouTube's real window is found after its hand-over.
+- **Home** opens the bar; ◀ ▶ OK carry out the choice; **Home again** leaves (both apps full size, sound back). Holding Back also opens the bar.
+- **Control and sound:** switching to the right side gives it focus and sound; the left side keeps playing, muted (`PLAY_AUDIO ignore`).
+- **70/30:** the small window is 560×440, because this TV keeps windows at least 440 px tall.
+- **Testing:** adb `input keyevent` keys skip the key service; test with `tvremote key` or the remote.
+- **Screenshots:** A1 Xplore and Netflix block them (the whole screen goes black in `screencap`).
 
 ## Measured on the TV (round 2, release build with the 4K wallpaper surface)
 
