@@ -1,0 +1,12 @@
+RootTask id=334 bounds=[990,175][1860,665] displayId=0 userId=0
+ configuration={1.0 ?mcc0mnc [en_GB] ldltr sw245dp w435dp h245dp 320dpi smll land television night -touch -keyb/v/h dpad/v winConfig={ mBounds=Rect(990, 175 - 1860, 665) mAppBounds=Rect(990, 175 - 1860, 665) mMaxBounds=Rect(0, 0 - 1920, 1080) mDisplayRotation=ROTATION_0 mWindowingMode=freeform mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6 fontWeightAdjustment=0}
+  taskId=334: com.internet.tvbrowser/com.internet.tvbrowser.MainActivity bounds=[990,175][1860,665] userId=0 visible=true topActivity=ComponentInfo{com.internet.tvbrowser/com.internet.tvbrowser.MainActivity}
+
+RootTask id=1 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 ?mcc0mnc [en_GB] ldltr sw540dp w960dp h540dp 320dpi lrg long land television night -touch -keyb/v/h dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mMaxBounds=Rect(0, 0 - 1920, 1080) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6 fontWeightAdjustment=0}
+  taskId=327: com.dzafirov.tvskin/com.dzafirov.tvskin.MainActivity bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.dzafirov.tvskin/com.dzafirov.tvskin.MainActivity}
+
+RootTask id=333 bounds=[60,175][930,665] displayId=0 userId=0
+ configuration={1.0 ?mcc0mnc [en_GB] ldltr sw245dp w435dp h245dp 320dpi smll land television night -touch -keyb/v/h dpad/v winConfig={ mBounds=Rect(60, 175 - 930, 665) mAppBounds=Rect(60, 175 - 930, 665) mMaxBounds=Rect(0, 0 - 1920, 1080) mDisplayRotation=ROTATION_0 mWindowingMode=freeform mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6 fontWeightAdjustment=0}
+  taskId=333: com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.MainActivity bounds=[60,175][930,665] userId=0 visible=false topActivity=ComponentInfo{com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.MainActivity}
+
