@@ -64,4 +64,27 @@ class HomeModelTest {
         context.getSharedPreferences("tvskin", Context.MODE_PRIVATE).edit().remove("a1_shown").commit()
         assertEquals(setOf("com.iqiyi.i18n.tv"), AppPrefs(context).hidden)
     }
+
+    @Test
+    fun `updates from other threads never lose the app list`() {
+        val model = HomeModel(context, AppPrefs(context), CountingApps(listOf(yt, nf, hbo)))
+        val weather = Thread { repeat(3_000) { i -> model.update { it.copy(greeting = "g$i") } } }
+        val apps = Thread { repeat(300) { model.refreshApps() } }
+        weather.start(); apps.start(); weather.join(); apps.join()
+        assertEquals(listOf(yt, nf, hbo), model.state.value.apps)
+        assertEquals("g2999", model.state.value.greeting)
+    }
+
+    @Test
+    fun `an empty app list right after an update is read again`() = kotlinx.coroutines.runBlocking {
+        var calls = 0
+        val flaky = object : InstalledApps {
+            override fun apps(): List<AppEntry> { calls++; return if (calls < 3) emptyList() else listOf(yt, nf) }
+            override fun tvItems(): List<AppEntry> = emptyList()
+        }
+        val model = HomeModel(context, AppPrefs(context), flaky)
+        model.loadApps(pause = {})
+        assertEquals(3, calls)
+        assertEquals(listOf(yt, nf), model.state.value.apps)
+    }
 }

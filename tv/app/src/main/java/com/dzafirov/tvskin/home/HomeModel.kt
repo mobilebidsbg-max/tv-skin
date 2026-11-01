@@ -35,6 +35,18 @@ class HomeModel(private val context: Context, private val prefs: AppPrefs, priva
         rearrange()
     }
 
+    /**
+     * [refreshApps], read again while the list comes back empty: right after an update Android briefly locks the
+     * app and the TV reports no apps at all (seen on the TV, 2026-11-02). Up to 6 tries, a second apart.
+     */
+    suspend fun loadApps(pause: suspend (Long) -> Unit = { kotlinx.coroutines.delay(it) }) {
+        repeat(6) { attempt ->
+            refreshApps()
+            if (installed.isNotEmpty()) return
+            if (attempt < 5) pause(1_000)
+        }
+    }
+
     /** Applies the saved order, hidden set, wallpaper and sleep default to the apps already read. Fast. */
     private fun rearrange() {
         val hidden = prefs.hiddenFor(installed.map { it.id })

@@ -134,14 +134,14 @@ class MainActivity : ComponentActivity(), HomeActions {
         refreshWeather()
         // Reading packages, inputs and usage events is slow on the TV: off the main thread.
         lifecycleScope.launch(Dispatchers.Default) {
-            model.refreshApps()
+            model.loadApps()
             refreshLastApp()
         }
     }
 
     /** Apps installed, removed or updated while the launcher runs: re-read them in the background. */
     private val packageChanges = object : LauncherApps.Callback() {
-        private fun changed() { lifecycleScope.launch(Dispatchers.Default) { model.refreshApps() } }
+        private fun changed() { lifecycleScope.launch(Dispatchers.Default) { model.loadApps() } }
         override fun onPackageRemoved(packageName: String, user: UserHandle) = changed()
         override fun onPackageAdded(packageName: String, user: UserHandle) = changed()
         override fun onPackageChanged(packageName: String, user: UserHandle) = changed()
