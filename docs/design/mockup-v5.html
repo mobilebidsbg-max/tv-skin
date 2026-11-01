@@ -22,8 +22,31 @@ svg.s{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke
 .frost{position:absolute;left:-60px;top:250px;width:1400px;height:420px;pointer-events:none;backdrop-filter:blur(26px) saturate(112%) brightness(.85);-webkit-backdrop-filter:blur(26px) saturate(112%) brightness(.85);mask-image:radial-gradient(52% 60% at 36% 58%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(52% 60% at 36% 58%,#000 30%,transparent 100%)}
 .band{position:absolute;left:0;top:600px;width:1920px;height:480px;pointer-events:none;backdrop-filter:blur(40px) saturate(130%);-webkit-backdrop-filter:blur(40px) saturate(130%);background:linear-gradient(180deg,rgba(14,10,6,0) 0,rgba(14,10,6,.3) 150px,rgba(14,10,6,.5) 100%);mask-image:linear-gradient(180deg,transparent 0,#000 130px);-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 130px)}
 
+/* top bar (from v4) */
+.glass{background:rgba(255,238,224,.09);backdrop-filter:blur(36px) saturate(170%);-webkit-backdrop-filter:blur(36px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 0 0 1.5px rgba(255,255,255,.12)}
+.top{position:absolute;left:96px;right:96px;top:44px;height:76px;display:flex;align-items:center;justify-content:space-between;z-index:6}
+.npill{height:64px;border-radius:32px;padding:0 24px 0 10px;display:flex;align-items:center;gap:14px;font-size:22px}
+.npill img{width:44px;height:44px;border-radius:12px;object-fit:cover}
+.npill b{font-weight:600}.npill span{opacity:.7}
+.npill.focused{transform:scale(1.05);background:rgba(255,255,255,.22)}
+.eq{display:flex;gap:3px;align-items:flex-end;height:20px;margin-left:2px}
+.eq i{width:4px;height:8px;background:#fff;border-radius:2px;animation:eq 1s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.25s}.eq i:nth-child(3){animation-delay:.5s}
+@keyframes eq{0%,100%{height:6px}50%{height:20px}}
+.tabs{position:absolute;left:50%;top:0;transform:translateX(-50%);height:76px;border-radius:38px;padding:8px;display:flex;gap:4px}
+.tb{height:60px;border-radius:30px;padding:0 28px;display:flex;align-items:center;gap:10px;font-size:26px;font-weight:600;opacity:.84}
+.tb.icon{padding:0 17px}.tb svg{width:30px;height:30px}
+.tb.sel{background:rgba(255,255,255,.92);color:#1b130c;opacity:1}
+.tb.focused{background:rgba(255,255,255,.26);opacity:1;transform:scale(1.06)}
+.tb.sel.focused{background:#fff}
+.status{display:flex;align-items:center;gap:20px;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums}
+.status .wx{display:flex;align-items:center;gap:8px;font-weight:500;opacity:.9}
+.status .date{font-weight:500;opacity:.72}
+.status svg{width:34px;height:34px}
+.avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:650;color:#2a1806;background:linear-gradient(135deg,#ffc27a,#d9944a)}
+
 /* hero */
-.hero{position:absolute;left:120px;top:320px}
+.hero{position:absolute;left:120px;top:388px}
 .hello{font-size:62px;font-weight:650;letter-spacing:-1.6px;line-height:1;margin:0 0 14px;text-shadow:0 2px 24px rgba(0,0,0,.3)}
 .hline{display:flex;align-items:center;gap:14px;font-size:26px;font-weight:450;margin:0;opacity:.88;text-shadow:0 2px 14px rgba(0,0,0,.35);font-variant-numeric:tabular-nums}
 .hline svg{width:30px;height:30px}
@@ -82,7 +105,7 @@ svg.s{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke
 .saver .wall2{position:absolute;inset:0;background:url(assets/wall-dune.jpg) center/cover no-repeat}
 .saver .vig{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 48%,rgba(0,0,0,0),rgba(0,0,0,.28))}
 .saver svg{position:absolute;inset:0}
-.sdate{position:absolute;left:0;right:0;top:688px;text-align:center;font-size:30px;font-weight:500;letter-spacing:.2px;opacity:.92;text-shadow:0 2px 18px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+.sdate{position:absolute;left:0;right:0;top:784px;text-align:center;font-size:30px;font-weight:500;letter-spacing:.2px;opacity:.92;text-shadow:0 2px 18px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
 .on-saver .saver{opacity:1;pointer-events:auto}
 .home{transition:opacity .6s}
 .on-saver .home{opacity:0}
@@ -94,37 +117,48 @@ svg.s{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke
     <div class="wall"></div>
     <div class="scrim"></div>
     <div class="frost"></div>
+    <header class="top">
+      <div class="npill glass f" data-row="0"><img src="assets/v3-album.jpg" alt=""><b>Midnight City</b><span>M83</span><span class="eq"><i></i><i></i><i></i></span></div>
+      <nav class="tabs glass">
+        <div class="tb icon f" data-row="0"><svg viewBox="0 0 24 24"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb36b"/><stop offset=".5" stop-color="#ff8fa3"/><stop offset="1" stop-color="#c9a2ff"/></linearGradient></defs><path fill="url(#sg)" d="M12 1.5c.6 4.6 3.4 7.9 9 9-5.6 1.1-8.4 4.4-9 9-.6-4.6-3.4-7.9-9-9 5.6-1.1 8.4-4.4 9-9z"/></svg></div>
+        <div class="tb sel f" data-row="0">Home</div>
+        <div class="tb f" data-row="0">Apps</div>
+        <div class="tb f" data-row="0">Music</div>
+        <div class="tb f" data-row="0">Photos</div>
+        <div class="tb icon f" data-row="0"><svg class="s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></div>
+      </nav>
+      <div class="status"><span class="wx"><svg viewBox="0 0 24 24"><path fill="#f1ebe2" d="M19.5 14.8A8 8 0 1 1 9.2 4.5a6.4 6.4 0 0 0 10.3 10.3z"/></svg>9°</span><span class="date" id="tdate">Sun 1 Nov</span><span id="tclock">21:40</span><span class="avatar">D</span></div>
+    </header>
     <div class="band"></div>
 
     <section class="hero">
       <h1 class="hello" id="hello">Good evening</h1>
-      <p class="hline"><svg viewBox="0 0 24 24"><path fill="#f1ebe2" d="M19.5 14.8A8 8 0 1 1 9.2 4.5a6.4 6.4 0 0 0 10.3 10.3z"/></svg>9° and clear in Sofia <i></i><span id="hclock">21:40</span></p>
       <div class="smart">
-        <div class="sc f" data-row="0"><span class="th"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 6v8l7-4z" fill="#fff"/></svg></span><span><b>Back to YouTube</b><small>Opened 20 min ago</small></span></div>
-        <div class="sc f" data-row="0"><span class="ico"><svg class="s" viewBox="0 0 24 24"><rect x="2.5" y="5" width="10.5" height="14" rx="2.2"/><rect x="15" y="5" width="6.5" height="14" rx="2.2"/></svg></span><span><b>Side by side</b><small>Two apps at once</small></span></div>
-        <div class="sc f" data-row="0" id="sleep"><span class="ico"><svg class="s" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span><b>Sleep</b><small id="sleepv">Off</small></span></div>
+        <div class="sc f" data-row="1"><span class="th"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 6v8l7-4z" fill="#fff"/></svg></span><span><b>Back to YouTube</b><small>Opened 20 min ago</small></span></div>
+        <div class="sc f" data-row="1"><span class="ico"><svg class="s" viewBox="0 0 24 24"><rect x="2.5" y="5" width="10.5" height="14" rx="2.2"/><rect x="15" y="5" width="6.5" height="14" rx="2.2"/></svg></span><span><b>Side by side</b><small>Two apps at once</small></span></div>
+        <div class="sc f" data-row="1" id="sleep"><span class="ico"><svg class="s" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span><b>Sleep</b><small id="sleepv">Off</small></span></div>
       </div>
     </section>
 
     <div class="row apps" id="apps">
-      <div class="tile t-yt f" data-row="1"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 6v8l7-4z" fill="#fff"/></svg><span class="nm">YouTube</span></div>
-      <div class="tile t-nf f" data-row="1">NETFLIX<span class="nm">Netflix</span></div>
-      <div class="tile t-mx f" data-row="1">max<span class="nm">HBO Max</span></div>
-      <div class="tile t-pv f" data-row="1">prime video<small></small><span class="nm">Prime Video</span></div>
-      <div class="tile t-dp f" data-row="1">Disney+<span class="nm">Disney+</span></div>
-      <div class="tile t-atv f" data-row="1"><svg viewBox="0 0 17 20"><path fill="#fff" d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2.1-.9-3.4-.9C3.5 4.8 1.9 5.8 1 7.3c-1.9 3.2-.5 8 1.3 10.6.9 1.3 1.9 2.7 3.3 2.6 1.3-.1 1.8-.8 3.4-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.2-2.6 1-1.5 1.4-2.9 1.4-3-.1 0-2.9-1.1-2.9-4.3zM11.5 3c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.1.1 2.3-.6 3-1.5z"/></svg>tv<span class="nm">Apple TV</span></div>
-      <div class="tile t-ym f" data-row="1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ff0033"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#fff" stroke-width="1.2"/><path d="M10.3 9.4v5.2l4.4-2.6z" fill="#fff"/></svg><span class="nm">YouTube Music</span></div>
-      <div class="tile t-sys sq gap f" data-row="1"><svg class="s" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="12" rx="2.2"/><path d="M8.5 21h7M9 2.5l3 3 3-3"/></svg>Live TV</div>
-      <div class="tile t-sys sq f" data-row="1"><svg class="s" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg>HDMI 1</div>
-      <div class="tile t-sys sq f" data-row="1"><svg class="s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</div>
+      <div class="tile t-yt f" data-row="2"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 6v8l7-4z" fill="#fff"/></svg><span class="nm">YouTube</span></div>
+      <div class="tile t-nf f" data-row="2">NETFLIX<span class="nm">Netflix</span></div>
+      <div class="tile t-mx f" data-row="2">max<span class="nm">HBO Max</span></div>
+      <div class="tile t-pv f" data-row="2">prime video<small></small><span class="nm">Prime Video</span></div>
+      <div class="tile t-dp f" data-row="2">Disney+<span class="nm">Disney+</span></div>
+      <div class="tile t-atv f" data-row="2"><svg viewBox="0 0 17 20"><path fill="#fff" d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2.1-.9-3.4-.9C3.5 4.8 1.9 5.8 1 7.3c-1.9 3.2-.5 8 1.3 10.6.9 1.3 1.9 2.7 3.3 2.6 1.3-.1 1.8-.8 3.4-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.2-2.6 1-1.5 1.4-2.9 1.4-3-.1 0-2.9-1.1-2.9-4.3zM11.5 3c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.1.1 2.3-.6 3-1.5z"/></svg>tv<span class="nm">Apple TV</span></div>
+      <div class="tile t-ym f" data-row="2"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ff0033"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#fff" stroke-width="1.2"/><path d="M10.3 9.4v5.2l4.4-2.6z" fill="#fff"/></svg><span class="nm">YouTube Music</span></div>
+      <div class="tile t-sys sq gap f" data-row="2"><svg class="s" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="12" rx="2.2"/><path d="M8.5 21h7M9 2.5l3 3 3-3"/></svg>Live TV</div>
+      <div class="tile t-sys sq f" data-row="2"><svg class="s" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg>HDMI 1</div>
+      <div class="tile t-sys sq f" data-row="2"><svg class="s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</div>
     </div>
 
     <div class="slabel"><em>NETFLIX</em>&amp;<u>max</u><span>· new and popular</span></div>
     <div class="row strip" id="strip">
-      <div class="pc f" data-row="2" style="background-image:url(assets/v3-roadtrip.jpg)"><span class="brand n">NETFLIX</span><span class="tt">The Long Road</span><span class="mt">New series</span></div>
-      <div class="pc f" data-row="2" style="background-image:url(assets/v3-corridor.jpg)"><span class="brand m">max</span><span class="tt">Night Corridor</span><span class="mt">Season 2 · Now streaming</span></div>
-      <div class="pc f" data-row="2" style="background-image:url(assets/v3-album.jpg)"><span class="brand n">NETFLIX</span><span class="tt">Low Light Sessions</span><span class="mt">Music documentary</span></div>
-      <div class="pc f" data-row="2" style="background-image:url(assets/gen-ridges-1.png)"><span class="brand m">max</span><span class="tt">Ridgeline</span><span class="mt">Film</span></div>
+      <div class="pc f" data-row="3" style="background-image:url(assets/v3-roadtrip.jpg)"><span class="brand n">NETFLIX</span><span class="tt">The Long Road</span><span class="mt">New series</span></div>
+      <div class="pc f" data-row="3" style="background-image:url(assets/v3-corridor.jpg)"><span class="brand m">max</span><span class="tt">Night Corridor</span><span class="mt">Season 2 · Now streaming</span></div>
+      <div class="pc f" data-row="3" style="background-image:url(assets/v3-album.jpg)"><span class="brand n">NETFLIX</span><span class="tt">Low Light Sessions</span><span class="mt">Music documentary</span></div>
+      <div class="pc f" data-row="3" style="background-image:url(assets/gen-ridges-1.png)"><span class="brand m">max</span><span class="tt">Ridgeline</span><span class="mt">Film</span></div>
     </div>
   </div>
 
@@ -133,17 +167,31 @@ svg.s{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke
     <div class="vig"></div>
     <svg viewBox="0 0 1920 1080" width="1920" height="1080" aria-hidden="true">
       <defs>
-        <clipPath id="digits"><text id="t1" x="960" y="600" text-anchor="middle" font-family="Inter, -apple-system, sans-serif" font-size="330" font-weight="600" letter-spacing="-10">21:40</text></clipPath>
-        <filter id="wblur" x="0" y="0" width="100%" height="100%"><feGaussianBlur stdDeviation="16"/><feComponentTransfer><feFuncR type="linear" slope="1.25" intercept=".06"/><feFuncG type="linear" slope="1.25" intercept=".06"/><feFuncB type="linear" slope="1.25" intercept=".06"/></feComponentTransfer></filter>
-        <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="20"/><feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer></filter>
-        <filter id="bevel" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="b"/><feSpecularLighting in="b" surfaceScale="5" specularConstant=".95" specularExponent="24" lighting-color="#fff" result="sp"><feDistantLight azimuth="240" elevation="52"/></feSpecularLighting><feComposite in="sp" in2="SourceAlpha" operator="in"/></filter>
+        <text id="t1" x="960" y="665" text-anchor="middle" font-family="Inter, -apple-system, sans-serif" font-size="400" font-weight="600" letter-spacing="-14" transform="translate(0 520) scale(1 1.55) translate(0 -520)">21:40</text>
+        <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="26"/><feOffset dy="26"/><feComponentTransfer><feFuncA type="linear" slope=".42"/></feComponentTransfer></filter>
+        <filter id="glass" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080" color-interpolation-filters="sRGB">
+          <feImage href="assets/wall-dune.jpg" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice" result="wall"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="ramp"/>
+          <feColorMatrix in="ramp" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="map"/>
+          <feGaussianBlur in="wall" stdDeviation="2" result="wallb"/>
+          <feDisplacementMap in="wallb" in2="map" scale="-90" xChannelSelector="R" yChannelSelector="G" result="refr"/>
+          <feComponentTransfer in="refr" result="lit"><feFuncR type="linear" slope="1.1" intercept=".035"/><feFuncG type="linear" slope="1.1" intercept=".035"/><feFuncB type="linear" slope="1.1" intercept=".035"/></feComponentTransfer>
+          <feComposite in="lit" in2="SourceAlpha" operator="in" result="body"/>
+          <feFlood flood-color="#fff" flood-opacity=".07"/><feComposite in2="SourceAlpha" operator="in" result="tint"/>
+          <feOffset in="SourceAlpha" dx="-7" dy="-10" result="o1"/><feGaussianBlur in="o1" stdDeviation="6" result="o1b"/>
+          <feComposite in="SourceAlpha" in2="o1b" operator="out" result="lowEdge"/>
+          <feFlood flood-color="#1a0c04" flood-opacity=".32"/><feComposite in2="lowEdge" operator="in" result="darkRim"/>
+          <feOffset in="SourceAlpha" dx="5" dy="7" result="o2"/><feGaussianBlur in="o2" stdDeviation="2.5" result="o2b"/>
+          <feComposite in="SourceAlpha" in2="o2b" operator="out" result="highEdge"/>
+          <feFlood flood-color="#fff" flood-opacity=".95"/><feComposite in2="highEdge" operator="in" result="lightRim"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="sb"/>
+          <feSpecularLighting in="sb" surfaceScale="11" specularConstant="1.2" specularExponent="60" lighting-color="#fff" result="spec"><feDistantLight azimuth="225" elevation="50"/></feSpecularLighting>
+          <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
+          <feMerge><feMergeNode in="body"/><feMergeNode in="tint"/><feMergeNode in="darkRim"/><feMergeNode in="lightRim"/><feMergeNode in="specIn"/></feMerge>
+        </filter>
       </defs>
       <use href="#t1" filter="url(#shadow)" fill="#000"/>
-      <g clip-path="url(#digits)">
-        <image href="assets/wall-dune.jpg" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice" filter="url(#wblur)"/>
-        <rect width="1920" height="1080" fill="#fff" opacity=".3"/>
-      </g>
-      <use href="#t1" fill="#fff" filter="url(#bevel)" opacity="1"/>
+      <use href="#t1" fill="#fff" filter="url(#glass)"/>
     </svg>
     <div class="sdate" id="sdate">Sunday, 1 November · 9° clear</div>
   </div>
@@ -155,14 +203,14 @@ function fit(){ const s = Math.min(innerWidth/1920, innerHeight/1080); screen.st
   screen.style.left = (innerWidth-1920*s)/2+'px'; screen.style.top = (innerHeight-1080*s)/2+'px'; }
 addEventListener('resize', fit); fit();
 
-const rows = [0,1,2].map(r => [...document.querySelectorAll(`.f[data-row="${r}"]`)]);
-const rowEl = [null, document.getElementById('apps'), document.getElementById('strip')];
+const rows = [0,1,2,3].map(r => [...document.querySelectorAll(`.f[data-row="${r}"]`)]);
+const rowEl = [null, null, document.getElementById('apps'), document.getElementById('strip')];
 let fr = 1, fc = 0;
 function focus(r, c){
   fr = r; fc = Math.max(0, Math.min(c, rows[r].length-1));
   document.querySelectorAll('.focused').forEach(e => e.classList.remove('focused'));
   const el = rows[fr][fc]; el.classList.add('focused');
-  [1,2].forEach(i => { if (!rowEl[i]) return;
+  [2,3].forEach(i => { if (!rowEl[i]) return;
     if (i !== fr) { rowEl[i].style.transform = ''; return; }
     const right = el.offsetLeft + el.offsetWidth + 120;
     rowEl[i].style.transform = `translateX(${-Math.max(0, right - 1800)}px)`; });
@@ -175,8 +223,8 @@ addEventListener('keydown', e => {
   if (screen.classList.contains('on-saver')) { screen.classList.remove('on-saver'); return; }
   if (k === 'ArrowRight') focus(fr, fc+1);
   else if (k === 'ArrowLeft') focus(fr, fc-1);
-  else if (k === 'ArrowUp' && fr > 0) focus(fr-1, fr-1 === 0 ? Math.min(fc, 2) : fc);
-  else if (k === 'ArrowDown' && fr < 2) focus(fr+1, fc);
+  else if (k === 'ArrowUp' && fr > 0) focus(fr-1, fr-1 === 1 ? Math.min(fc, 2) : fr-1 === 0 ? 2 : fc);
+  else if (k === 'ArrowDown' && fr < 3) focus(fr+1, fr === 0 ? 0 : fc);
   else if (k === 'Enter' && rows[fr][fc].id === 'sleep') { sleepIx = (sleepIx+1) % 4; document.getElementById('sleepv').textContent = sleepSteps[sleepIx]; }
   else return;
   e.preventDefault();
@@ -189,7 +237,8 @@ function tick(){
   const hm = pin || now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
   const h = +hm.split(':')[0];
   document.getElementById('hello').textContent = h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 18 ? 'Good afternoon' : 'Good evening';
-  document.getElementById('hclock').textContent = hm;
+  document.getElementById('tclock').textContent = hm;
+  document.getElementById('tdate').textContent = now.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}).replace(',', '');
   document.getElementById('t1').textContent = hm;
   document.getElementById('sdate').textContent = now.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'}) + ' · 9° clear';
 }
@@ -197,7 +246,7 @@ tick(); setInterval(tick, 15000);
 
 const view = location.hash.slice(1);
 if (view === 'saver') screen.classList.add('on-saver');
-focus(view === 'end' ? 1 : (view === 'strip' ? 2 : 1), view === 'end' ? 99 : 0);
+focus(view === 'end' ? 2 : (view === 'strip' ? 3 : 2), view === 'end' ? 99 : 0);
 </script>
 </body>
 </html>
