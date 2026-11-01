@@ -64,7 +64,7 @@ private fun Tabs(wallpaper: Wallpaper, selected: Tab, onTab: (Tab) -> Unit, modi
             TextTab(R.string.tab_apps, Tab.APPS, onTab, selected = selected == Tab.APPS)
             TextTab(R.string.tab_music, Tab.MUSIC, onTab, selected = selected == Tab.MUSIC)
             TextTab(R.string.tab_photos, Tab.PHOTOS, onTab, selected = selected == Tab.PHOTOS)
-            IconTab(R.drawable.ic_gear, Tab.SETTINGS, onTab)
+            IconTab(R.drawable.ic_gear, Tab.SETTINGS, onTab, selected = selected == Tab.SETTINGS)
         }
     }
 }
@@ -85,14 +85,15 @@ private fun TextTab(label: Int, tab: Tab, onTab: (Tab) -> Unit, selected: Boolea
 }
 
 @Composable
-private fun IconTab(icon: Int, tab: Tab, onTab: (Tab) -> Unit, tint: Boolean = true) {
+private fun IconTab(icon: Int, tab: Tab, onTab: (Tab) -> Unit, tint: Boolean = true, selected: Boolean = false) {
     FocusSurface(
         onClick = { onTab(tab) },
         modifier = Modifier.size(width = 34.dp, height = 30.dp).testTag("tab:${tab.name.lowercase()}"),
         radius = 15.dp,
-        container = Color.Transparent,
-        focusedContainer = Color.White.copy(alpha = 0.26f),
-        focusedContent = Color.White,
+        container = if (selected) TvColors.FocusFill else Color.Transparent,
+        content = if (selected) TvColors.Ink else Color.White,
+        focusedContainer = if (selected) Color.White else Color.White.copy(alpha = 0.26f),
+        focusedContent = if (selected) TvColors.Ink else Color.White,
     ) {
         if (tint) Icon(painterResource(icon), null, Modifier.size(15.dp).align(Alignment.Center))
         else Image(painterResource(icon), null, Modifier.size(15.dp).align(Alignment.Center))

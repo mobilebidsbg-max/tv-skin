@@ -24,6 +24,9 @@ data class HomeState(
     val apps: List<AppEntry>,
     val tvItems: List<AppEntry>,
     val promos: List<AppEntry>,
+    val hiddenApps: List<AppEntry> = emptyList(),
+    val sleepDefaultMinutes: Int = 60,
+    val version: String = "",
 )
 
 interface HomeActions {
@@ -35,6 +38,8 @@ interface HomeActions {
     fun hide(e: AppEntry)
     /** Move an app [delta] places in the row (hold-OK menu, Move). */
     fun move(e: AppEntry, delta: Int)
-    fun settings()
+    fun unhide(e: AppEntry)
+    fun setWallpaper(w: Wallpaper)
+    fun setSleepDefault(minutes: Int)
     fun tab(tab: Tab)
 }

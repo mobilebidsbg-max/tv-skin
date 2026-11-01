@@ -21,6 +21,7 @@ import com.dzafirov.tvskin.lastapp.LastAppStore
 import com.dzafirov.tvskin.lastapp.openedAgo
 import com.dzafirov.tvskin.lastapp.pickLastApp
 import com.dzafirov.tvskin.ui.TvSkinTheme
+import com.dzafirov.tvskin.ui.Wallpaper
 import androidx.lifecycle.lifecycleScope
 import com.dzafirov.tvskin.sleep.SleepScheduler
 import com.dzafirov.tvskin.sleep.SleepTimer
@@ -118,13 +119,26 @@ class MainActivity : ComponentActivity(), HomeActions {
         prefs.order = AppArranger.move(model.state.value.apps.map { it.id }, e.id, delta)
         model.refreshApps()
     }
-    override fun settings() = soon("Settings come next")
+    override fun unhide(e: AppEntry) {
+        prefs.hidden = prefs.hiddenFor(repo.apps().map { it.id }) - e.id
+        model.refreshApps()
+    }
+
+    override fun setWallpaper(w: Wallpaper) {
+        prefs.wallpaper = w
+        model.refreshApps()
+    }
+
+    override fun setSleepDefault(minutes: Int) {
+        prefs.sleepDefaultMinutes = minutes
+        model.refreshApps()
+    }
     override fun tab(tab: Tab) = when (tab) {
         Tab.HOME -> Unit
         Tab.ASK -> soon("Ask comes later")
         Tab.MUSIC -> soon("Music comes next")
         Tab.PHOTOS -> soon("Photos come next")
         Tab.APPS -> soon("Apps come next")
-        Tab.SETTINGS -> settings()
+        Tab.SETTINGS -> Unit
     }
 }

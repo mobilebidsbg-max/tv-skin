@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import com.dzafirov.tvskin.R
 import com.dzafirov.tvskin.apps.AppEntry
+import com.dzafirov.tvskin.settings.SettingsPanel
 import com.dzafirov.tvskin.sleep.SleepTimer
 import com.dzafirov.tvskin.ui.Band
 import com.dzafirov.tvskin.ui.Frost
@@ -71,14 +72,14 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
 
     fun onTab(tab: Tab) {
         when (tab) {
-            Tab.HOME, Tab.APPS -> if (page != tab) {
+            Tab.HOME, Tab.APPS, Tab.SETTINGS -> if (page != tab) {
                 page = tab
-                pendingFocus = state.apps.firstOrNull()?.id
+                pendingFocus = if (tab == Tab.SETTINGS) null else state.apps.firstOrNull()?.id
             }
             else -> actions.tab(tab)
         }
     }
-    BackHandler(enabled = page == Tab.APPS && menuFor == null && movingId == null) { onTab(Tab.HOME) }
+    BackHandler(enabled = page != Tab.HOME && menuFor == null && movingId == null) { onTab(Tab.HOME) }
 
     BackHandler(enabled = menuFor != null || inputsOpen || sleepOpen) {
         pendingFocus = menuFor?.id ?: "widget:input"
@@ -106,7 +107,9 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         WallpaperImage(state.wallpaper)
         Box(Modifier.fillMaxWidth().height(76.dp).background(Brush.verticalGradient(listOf(Color(0x47000000), Color.Transparent))))
 
-        if (page == Tab.APPS) {
+        if (page == Tab.SETTINGS) {
+            SettingsPanel(state, actions, Modifier.align(Alignment.TopEnd).padding(top = 70.dp, end = Sizes.sideMargin, bottom = 30.dp).size(420.dp, 440.dp))
+        } else if (page == Tab.APPS) {
             Band(state.wallpaper, Modifier.offset((-48).dp, 40.dp).unbounded().size(1056.dp, 560.dp))
             AppsPage(
                 state.apps, actions, ::focusFor, movingId,

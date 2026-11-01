@@ -50,7 +50,8 @@ class AppsPageTest {
         val tabs = mutableListOf<Tab>()
         show(object : HomeActions by NoActions { override fun tab(tab: Tab) { tabs += tab } })
         compose.onNodeWithTag("tab:music").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithTag("tab:settings").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals(listOf(Tab.MUSIC, Tab.SETTINGS), tabs)
+        compose.onNodeWithTag("tab:photos").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithTag("tab:ask").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf(Tab.MUSIC, Tab.PHOTOS, Tab.ASK), tabs)
     }
 }

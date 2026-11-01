@@ -77,6 +77,8 @@ object NoActions : HomeActions {
     override fun setSleep(minutes: Int?) {}
     override fun hide(e: AppEntry) {}
     override fun move(e: AppEntry, delta: Int) {}
-    override fun settings() {}
+    override fun unhide(e: AppEntry) {}
+    override fun setWallpaper(w: Wallpaper) {}
+    override fun setSleepDefault(minutes: Int) {}
     override fun tab(tab: Tab) {}
 }

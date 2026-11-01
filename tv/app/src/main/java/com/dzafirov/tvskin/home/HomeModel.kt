@@ -27,6 +27,9 @@ class HomeModel(private val context: Context, private val prefs: AppPrefs, priva
         val promos = PROMO_PACKAGES.mapNotNull { pkg -> installed.firstOrNull { it.id == pkg } }
         state.value = state.value.copy(
             wallpaper = prefs.wallpaper,
+            hiddenApps = installed.filter { it.id in hidden }.sortedBy { it.label.lowercase() },
+            sleepDefaultMinutes = prefs.sleepDefaultMinutes,
+            version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty(),
             apps = AppArranger.arrange(installed, prefs.order, hidden),
             tvItems = repo.tvItems(),
             promos = promos,
