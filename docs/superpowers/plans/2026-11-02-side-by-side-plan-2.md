@@ -1,5 +1,7 @@
 # Plan 2: Side by side (two windows)
 
+> **Status 2026-11-02: built and tested on the TV, then removed at Dimitar's request ("too complicated"). Last commit with the code: e52db91; removal: a0c988e.**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** two apps on screen at once, in the Apple-like layout of mockup v3 (50/50 or 70/30). The side you control has the sound; the other side keeps playing silently. A glass control bar is opened with Home.
