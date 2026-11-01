@@ -37,4 +37,10 @@
     <string name="settings_about">About</string>
     <string name="settings_changes">Changes to the TV: see docs/TV-INSTALL.md on the Mac</string>
     <string name="saver_name">TV Skin clock</string>
+    <string name="air_title">Air in Sofia</string>
+    <string name="air_detail">AQI %1$d · PM2.5 %2$d µg/m³</string>
+    <string name="headlines_title">Headlines</string>
+    <string name="picture">Picture</string>
+    <string name="sound">Sound</string>
+    <string name="adjust">Adjust</string>
 </resources>

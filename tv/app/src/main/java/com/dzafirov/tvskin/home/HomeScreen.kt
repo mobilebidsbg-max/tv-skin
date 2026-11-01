@@ -151,6 +151,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             Text(stringResource(R.string.today), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.widgetsLabelTop))
             WidgetsRow(
                 state,
+                actions,
                 onSleep = { sleepOpen = true; sheetOpener = "widget:sleep" },
                 onInputs = { inputsOpen = true; sheetOpener = "widget:input" },
                 focusFor = ::focusFor,

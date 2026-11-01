@@ -4,6 +4,8 @@ import com.dzafirov.tvskin.apps.AppEntry
 import com.dzafirov.tvskin.ui.Wallpaper
 import com.dzafirov.tvskin.weather.HourWeather
 import com.dzafirov.tvskin.weather.WeatherNow
+import com.dzafirov.tvskin.widgets.AirNow
+import com.dzafirov.tvskin.widgets.Headline
 
 /** What is playing right now (filled in plan 2; null hides the pill). */
 data class NowPlaying(val title: String, val artist: String)
@@ -24,6 +26,8 @@ data class HomeState(
     val apps: List<AppEntry>,
     val tvItems: List<AppEntry>,
     val promos: List<AppEntry>,
+    val air: AirNow? = null,
+    val headlines: List<Headline> = emptyList(),
     val hiddenApps: List<AppEntry> = emptyList(),
     /** Every installed app for the Apps tab: his order first, hidden ones included. */
     val allApps: List<AppEntry> = emptyList(),
@@ -46,4 +50,8 @@ interface HomeActions {
     fun setWallpaper(w: Wallpaper)
     fun setSleepDefault(minutes: Int)
     fun tab(tab: Tab)
+    /** Open a web page (a headline) in the TV's browser. */
+    fun openUrl(url: String)
+    /** The TV's own picture and sound settings. */
+    fun openDisplaySound()
 }

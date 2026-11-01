@@ -40,6 +40,8 @@ class MainActivity : ComponentActivity(), HomeActions {
     private lateinit var repo: AppRepository
     private lateinit var lastApps: LastAppStore
     private val weather = WeatherRepository()
+    private val air = com.dzafirov.tvskin.widgets.AirRepository()
+    private val news = com.dzafirov.tvskin.widgets.HeadlinesRepository()
     private lateinit var sleep: SleepScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,8 +125,9 @@ class MainActivity : ComponentActivity(), HomeActions {
     /** Weather in the top bar and the Today card; on failure the old values (or none) stay. */
     private fun refreshWeather() {
         lifecycleScope.launch {
-            val forecast = weather.forecast() ?: return@launch
-            model.update { it.copy(weather = forecast.now, hours = forecast.hours) }
+            weather.forecast()?.let { f -> model.update { it.copy(weather = f.now, hours = f.hours) } }
+            air.now()?.let { a -> model.update { it.copy(air = a) } }
+            news.latest().takeIf { it.isNotEmpty() }?.let { h -> model.update { it.copy(headlines = h) } }
         }
     }
 
@@ -167,5 +170,15 @@ class MainActivity : ComponentActivity(), HomeActions {
         Tab.PHOTOS -> soon("Photos come next")
         Tab.APPS -> soon("Apps come next")
         Tab.SETTINGS -> Unit
+    }
+
+    override fun openUrl(url: String) {
+        val view = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(view) }.onFailure { soon("No browser for this link") }
+    }
+
+    override fun openDisplaySound() {
+        val intent = android.content.Intent().setClassName("com.android.tv.settings", "com.android.tv.settings.device.displaysound.DisplaySoundActivity").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(intent) }.onFailure { runCatching { startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
     }
 }

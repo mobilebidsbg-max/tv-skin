@@ -1,0 +1,1 @@
+{"latitude":42.7,"longitude":23.3,"generationtime_ms":0.2573728561401367,"utc_offset_seconds":7200,"timezone":"Europe/Sofia","timezone_abbreviation":"GMT+2","elevation":548.0,"current_units":{"time":"iso8601","interval":"seconds","european_aqi":"EAQI","pm2_5":"μg/m³","pm10":"μg/m³"},"current":{"time":"2026-11-01T23:00","interval":3600,"european_aqi":47,"pm2_5":26.8,"pm10":33.9}}

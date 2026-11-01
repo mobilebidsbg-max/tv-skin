@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>TechCrunch</title>
+	<atom:link href="https://techcrunch.com/feed/" rel="self" type="application/rss+xml" />
+	<link>https://techcrunch.com/</link>
+	<description>x</description>
+	<lastBuildDate>Sun, 01 Nov 2026 21:06:03 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.9.11</generator>
+
+<image>
+	<url>https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32</url>
+	<title>TechCrunch</title>
+	<link>https://techcrunch.com/</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>AI can make tech CEOs’ lives easier. What about everyone else?</title>
+		<link>https://techcrunch.com/2026/11/01/ai-can-make-tech-ceos-lives-easier-what-about-everyone-else/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sun, 01 Nov 2026 20:57:58 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[Marissa Mayer]]></category>
+		<category><![CDATA[Mark Zuckerberg]]></category>
+		<category><![CDATA[sam altman]]></category>
+		<category><![CDATA[Whitney Wolfe Herd]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3184041</guid>
+
+					<description>x</description>
+		
+		
+		
+			</item><item>
+		<title>TechCrunch Mobility: A new, bigger AV boom is here</title>
+		<link>https://techcrunch.com/2026/11/01/techcrunch-mobility-a-new-bigger-av-boom-is-here/</link>
+		
+		<dc:creator><![CDATA[Kirsten Korosec]]></dc:creator>
+		<pubDate>Sun, 01 Nov 2026 17:04:00 +0000</pubDate>
+				<category><![CDATA[Transportation]]></category>
+		<category><![CDATA[Robotics]]></category>
+		<category><![CDATA[avs]]></category>
+		<category><![CDATA[Trucks VC]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3183874</guid>
+
+					<description>x</description>
+		
+		
+		
+			</item><item>
+		<title>Binance resumes withdrawals following $6.3 billion breach</title>
+		<link>https://techcrunch.com/2026/11/01/binance-resumes-withdrawals-following-6-3-billion-breach/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sun, 01 Nov 2026 16:20:10 +0000</pubDate>
+				<category><![CDATA[Crypto]]></category>
+		<category><![CDATA[Binance]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3184037</guid>
+
+					<description>x</description>
+		
+		
+		
+			</item></channel>
+</rss>

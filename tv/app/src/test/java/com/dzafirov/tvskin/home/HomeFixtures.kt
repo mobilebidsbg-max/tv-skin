@@ -16,6 +16,8 @@ import com.dzafirov.tvskin.ui.AppArt
 import com.dzafirov.tvskin.ui.Wallpaper
 import com.dzafirov.tvskin.weather.HourWeather
 import com.dzafirov.tvskin.weather.WeatherNow
+import com.dzafirov.tvskin.widgets.AirNow
+import com.dzafirov.tvskin.widgets.Headline
 
 /** Stand-in banners for snapshots: Robolectric has no real apps installed. */
 object FakeAppArt : AppArt {
@@ -69,6 +71,12 @@ fun sampleState(
     apps = apps,
     tvItems = sampleTvItems,
     promos = listOf(sampleApps[1], sampleApps[2]),
+    air = AirNow(47, 26.8),
+    headlines = listOf(
+        Headline("NASA hopes the commercial space industry can help save Hubble", "https://www.theverge.com/science/1024239", "The Verge", 3),
+        Headline("AI can make tech CEOs’ lives easier. What about everyone else?", "https://techcrunch.com/2026/11/01/ai", "TechCrunch", 2),
+        Headline("Flock keeps ignoring requests to cancel its contracts", "https://www.theverge.com/tech/1024232", "The Verge", 1),
+    ),
 )
 
 object NoActions : HomeActions {
@@ -81,4 +89,6 @@ object NoActions : HomeActions {
     override fun setWallpaper(w: Wallpaper) {}
     override fun setSleepDefault(minutes: Int) {}
     override fun tab(tab: Tab) {}
+    override fun openUrl(url: String) {}
+    override fun openDisplaySound() {}
 }
