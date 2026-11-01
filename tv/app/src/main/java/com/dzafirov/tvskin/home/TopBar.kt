@@ -37,10 +37,10 @@ import com.dzafirov.tvskin.weather.weatherIcon
 
 /** v5 top bar: now playing (left), glass tabs (centre), weather · date · time · avatar (right). */
 @Composable
-fun TopBar(state: HomeState, actions: HomeActions, modifier: Modifier = Modifier) {
+fun TopBar(state: HomeState, selected: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(Sizes.topBarHeight)) {
         state.nowPlaying?.let { NowPlayingPill(it, state.wallpaper, Modifier.align(Alignment.CenterStart)) }
-        Tabs(state.wallpaper, actions, Modifier.align(Alignment.Center))
+        Tabs(state.wallpaper, selected, onTab, Modifier.align(Alignment.Center))
         Status(state, Modifier.align(Alignment.CenterEnd))
     }
 }
@@ -56,23 +56,23 @@ private fun NowPlayingPill(np: NowPlaying, wallpaper: Wallpaper, modifier: Modif
 }
 
 @Composable
-private fun Tabs(wallpaper: Wallpaper, actions: HomeActions, modifier: Modifier) {
+private fun Tabs(wallpaper: Wallpaper, selected: Tab, onTab: (Tab) -> Unit, modifier: Modifier) {
     GlassPanel(wallpaper, modifier.height(Sizes.topBarHeight), radius = 19.dp) {
         Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconTab(R.drawable.ic_spark, Tab.ASK, actions, tint = false)
-            TextTab(R.string.tab_home, Tab.HOME, actions, selected = true)
-            TextTab(R.string.tab_apps, Tab.APPS, actions)
-            TextTab(R.string.tab_music, Tab.MUSIC, actions)
-            TextTab(R.string.tab_photos, Tab.PHOTOS, actions)
-            IconTab(R.drawable.ic_gear, Tab.SETTINGS, actions)
+            IconTab(R.drawable.ic_spark, Tab.ASK, onTab, tint = false)
+            TextTab(R.string.tab_home, Tab.HOME, onTab, selected = selected == Tab.HOME)
+            TextTab(R.string.tab_apps, Tab.APPS, onTab, selected = selected == Tab.APPS)
+            TextTab(R.string.tab_music, Tab.MUSIC, onTab, selected = selected == Tab.MUSIC)
+            TextTab(R.string.tab_photos, Tab.PHOTOS, onTab, selected = selected == Tab.PHOTOS)
+            IconTab(R.drawable.ic_gear, Tab.SETTINGS, onTab)
         }
     }
 }
 
 @Composable
-private fun TextTab(label: Int, tab: Tab, actions: HomeActions, selected: Boolean = false) {
+private fun TextTab(label: Int, tab: Tab, onTab: (Tab) -> Unit, selected: Boolean = false) {
     FocusSurface(
-        onClick = { actions.tab(tab) },
+        onClick = { onTab(tab) },
         modifier = Modifier.height(30.dp).testTag("tab:${tab.name.lowercase()}"),
         radius = 15.dp,
         container = if (selected) TvColors.FocusFill else Color.Transparent,
@@ -85,9 +85,9 @@ private fun TextTab(label: Int, tab: Tab, actions: HomeActions, selected: Boolea
 }
 
 @Composable
-private fun IconTab(icon: Int, tab: Tab, actions: HomeActions, tint: Boolean = true) {
+private fun IconTab(icon: Int, tab: Tab, onTab: (Tab) -> Unit, tint: Boolean = true) {
     FocusSurface(
-        onClick = { actions.tab(tab) },
+        onClick = { onTab(tab) },
         modifier = Modifier.size(width = 34.dp, height = 30.dp).testTag("tab:${tab.name.lowercase()}"),
         radius = 15.dp,
         container = Color.Transparent,

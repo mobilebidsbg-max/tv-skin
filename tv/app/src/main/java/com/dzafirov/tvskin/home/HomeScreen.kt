@@ -60,11 +60,23 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     fun focusFor(id: String) = requesters.getOrPut(id) { FocusRequester() }
     fun Modifier.section(s: Section) = onFocusChanged { if (it.hasFocus) section = s }
 
+    var page by remember { mutableStateOf(Tab.HOME) }
     var menuFor by remember { mutableStateOf<AppEntry?>(null) }
     var inputsOpen by remember { mutableStateOf(false) }
     var movingId by remember { mutableStateOf<String?>(null) }
     // The tile to focus once the next layout is done (after a menu closes, a move, or a hide).
     var pendingFocus by remember { mutableStateOf(state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id) }
+
+    fun onTab(tab: Tab) {
+        when (tab) {
+            Tab.HOME, Tab.APPS -> if (page != tab) {
+                page = tab
+                pendingFocus = state.apps.firstOrNull()?.id
+            }
+            else -> actions.tab(tab)
+        }
+    }
+    BackHandler(enabled = page == Tab.APPS && menuFor == null && movingId == null) { onTab(Tab.HOME) }
 
     BackHandler(enabled = menuFor != null || inputsOpen) {
         pendingFocus = menuFor?.id ?: "widget:input"
@@ -91,7 +103,14 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         WallpaperImage(state.wallpaper)
         Box(Modifier.fillMaxWidth().height(76.dp).background(Brush.verticalGradient(listOf(Color(0x47000000), Color.Transparent))))
 
-        Box(Modifier.fillMaxSize().offset { IntOffset(0, scroll.roundToPx()) }) {
+        if (page == Tab.APPS) {
+            Band(state.wallpaper, Modifier.offset((-48).dp, 40.dp).unbounded().size(1056.dp, 560.dp))
+            AppsPage(
+                state.apps, actions, ::focusFor, movingId,
+                onHold = { menuFor = it },
+                modifier = Modifier.fillMaxSize().padding(top = 70.dp),
+            )
+        } else Box(Modifier.fillMaxSize().offset { IntOffset(0, scroll.roundToPx()) }) {
             Box(Modifier.graphicsLayer { alpha = heroAlpha }) {
                 Frost(state.wallpaper, Modifier.offset((-30).dp, 145.dp).unbounded().size(700.dp, 190.dp), feather = 90.dp, darken = 0.15f)
             }
@@ -116,7 +135,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             }
         }
 
-        TopBar(state, actions, Modifier.padding(horizontal = 48.dp).offset(y = Sizes.topBarTop).section(Section.UPPER))
+        TopBar(state, page, ::onTab, Modifier.padding(horizontal = 48.dp).offset(y = Sizes.topBarTop).section(Section.UPPER))
 
         if (menuFor != null || inputsOpen) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)))

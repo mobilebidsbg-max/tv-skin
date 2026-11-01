@@ -69,14 +69,14 @@ fun AppRow(
 }
 
 @Composable
-private fun AppTile(entry: AppEntry, actions: HomeActions, moving: Boolean, onHold: (AppEntry) -> Unit, modifier: Modifier) {
+fun AppTile(entry: AppEntry, actions: HomeActions, moving: Boolean, onHold: (AppEntry) -> Unit, modifier: Modifier, tagPrefix: String = "app") {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     Column(Modifier.width(Sizes.tileWidth), horizontalAlignment = Alignment.CenterHorizontally) {
         FocusSurface(
             onClick = { actions.open(entry) },
             onLongClick = { onHold(entry) },
-            modifier = modifier.size(Sizes.tileWidth, Sizes.tileHeight).testTag("app:${entry.id}"),
+            modifier = modifier.size(Sizes.tileWidth, Sizes.tileHeight).testTag("$tagPrefix:${entry.id}"),
             radius = Sizes.tileRadius,
             focusedScale = Sizes.focusScale,
             container = Color.Black,
