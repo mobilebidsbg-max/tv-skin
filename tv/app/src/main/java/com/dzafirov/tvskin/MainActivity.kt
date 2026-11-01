@@ -42,6 +42,8 @@ class MainActivity : ComponentActivity(), HomeActions {
     private val weather = WeatherRepository()
     private val air = com.dzafirov.tvskin.widgets.AirRepository()
     private val news = com.dzafirov.tvskin.widgets.HeadlinesRepository()
+    private val titles = com.dzafirov.tvskin.widgets.PromosRepository(BuildConfig.TMDB_API_KEY)
+    private val nowPlaying by lazy { com.dzafirov.tvskin.media.NowPlayingWatcher(this) { np -> model.update { it.copy(nowPlaying = np) } } }
     private lateinit var sleep: SleepScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,6 +89,16 @@ class MainActivity : ComponentActivity(), HomeActions {
         model.update { it.copy(resetToken = it.resetToken + 1) }
     }
 
+    override fun onStart() {
+        super.onStart()
+        nowPlaying.start()
+    }
+
+    override fun onStop() {
+        nowPlaying.stop()
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         model.tick()
@@ -128,6 +140,7 @@ class MainActivity : ComponentActivity(), HomeActions {
             weather.forecast()?.let { f -> model.update { it.copy(weather = f.now, hours = f.hours) } }
             air.now()?.let { a -> model.update { it.copy(air = a) } }
             news.latest().takeIf { it.isNotEmpty() }?.let { h -> model.update { it.copy(headlines = h) } }
+            titles.latest().takeIf { it.isNotEmpty() }?.let { t -> model.update { it.copy(titles = t) } }
         }
     }
 

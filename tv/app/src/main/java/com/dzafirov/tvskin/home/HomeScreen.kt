@@ -157,13 +157,17 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
                 focusFor = ::focusFor,
                 modifier = Modifier.offset(y = Sizes.widgetsTop).section(Section.LOWER))
 
-            if (state.promos.isNotEmpty()) {
-                Text(stringResource(R.string.promo_label), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.stripLabelTop))
-                PromoStrip(state.promos, actions, Modifier.offset(y = Sizes.stripTop).section(Section.LOWER))
+            if (state.promos.isNotEmpty() || state.titles.isNotEmpty()) {
+                Text(stringResource(if (state.titles.isNotEmpty()) R.string.promo_label_titles else R.string.promo_label), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.stripLabelTop))
+                PromoStrip(state.promos, state.titles, actions, Modifier.offset(y = Sizes.stripTop).section(Section.LOWER))
             }
         }
 
-        TopBar(state, page, ::onTab, Modifier.padding(horizontal = 48.dp).offset(y = Sizes.topBarTop).section(Section.UPPER))
+        TopBar(
+            state, page, ::onTab,
+            onOpenApp = { pkg -> actions.open(AppEntry(pkg, state.nowPlaying?.title.orEmpty(), AppEntry.Kind.APP)) },
+            modifier = Modifier.padding(horizontal = 48.dp).offset(y = Sizes.topBarTop).section(Section.UPPER),
+        )
 
         if (menuFor != null || inputsOpen || sleepOpen) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)))

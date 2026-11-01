@@ -1,6 +1,18 @@
 package com.dzafirov.tvskin.home
 
 import androidx.compose.foundation.Image
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import com.dzafirov.tvskin.ui.Frost
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,20 +49,58 @@ import com.dzafirov.tvskin.weather.weatherIcon
 
 /** v5 top bar: now playing (left), glass tabs (centre), weather · date · time · avatar (right). */
 @Composable
-fun TopBar(state: HomeState, selected: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Modifier) {
+fun TopBar(state: HomeState, selected: Tab, onTab: (Tab) -> Unit, onOpenApp: (String) -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(Sizes.topBarHeight)) {
-        state.nowPlaying?.let { NowPlayingPill(it, state.wallpaper, Modifier.align(Alignment.CenterStart)) }
+        state.nowPlaying?.let { np ->
+            NowPlayingPill(np, state.wallpaper, onOpen = { onOpenApp(np.packageName) }, modifier = Modifier.align(Alignment.CenterStart))
+        }
         Tabs(state.wallpaper, selected, onTab, Modifier.align(Alignment.Center))
         Status(state, Modifier.align(Alignment.CenterEnd))
     }
 }
 
+/** What's playing (v5 top-left): cover, title, artist and moving bars while it plays; OK opens that app. */
 @Composable
-private fun NowPlayingPill(np: NowPlaying, wallpaper: Wallpaper, modifier: Modifier) {
-    GlassPanel(wallpaper, modifier.height(32.dp), radius = 16.dp) {
-        Row(Modifier.padding(horizontal = 12.dp).align(Alignment.Center), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text(np.title, style = TvType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp), color = Color.White)
-            Text(np.artist, style = TvType.body.copy(fontSize = 11.sp), color = TvColors.Dim)
+private fun NowPlayingPill(np: NowPlaying, wallpaper: Wallpaper, onOpen: () -> Unit, modifier: Modifier) {
+    FocusSurface(
+        onClick = onOpen,
+        modifier = modifier.height(32.dp).testTag("nowplaying"),
+        radius = 16.dp,
+        focusedScale = 1.05f,
+        container = Color.Transparent,
+        focusedContainer = Color.White.copy(alpha = 0.22f),
+        focusedContent = Color.White,
+        edge = TvColors.GlassEdge,
+    ) {
+        Frost(wallpaper, Modifier.matchParentSize(), feather = 0.dp, darken = 0.05f)
+        Box(Modifier.matchParentSize().background(TvColors.GlassFill))
+        Row(Modifier.padding(start = 5.dp, end = 12.dp).align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            val art = np.art
+            if (art != null) {
+                Image(art.asImageBitmap(), null, Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
+            } else {
+                Box(Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.15f)))
+            }
+            Text(np.title, style = TvType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 150.dp))
+            if (np.artist.isNotEmpty()) {
+                Text(np.artist, style = TvType.body.copy(fontSize = 11.sp), color = TvColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
+            }
+            EqBars(np.playing)
+        }
+    }
+}
+
+/** Three little bars that move while something plays and rest when it is paused. */
+@Composable
+private fun EqBars(playing: Boolean) {
+    val transition = rememberInfiniteTransition(label = "eq")
+    Row(Modifier.height(10.dp), horizontalArrangement = Arrangement.spacedBy(1.5.dp), verticalAlignment = Alignment.Bottom) {
+        listOf(0, 250, 500).forEach { delay ->
+            val h by transition.animateFloat(
+                initialValue = 0.3f, targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(500, delayMillis = delay), RepeatMode.Reverse), label = "bar",
+            )
+            Box(Modifier.size(width = 2.dp, height = 10.dp * (if (playing) h else 0.3f)).clip(RoundedCornerShape(1.dp)).background(Color.White))
         }
     }
 }

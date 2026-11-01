@@ -7,8 +7,14 @@ import com.dzafirov.tvskin.weather.WeatherNow
 import com.dzafirov.tvskin.widgets.AirNow
 import com.dzafirov.tvskin.widgets.Headline
 
-/** What is playing right now (filled in plan 2; null hides the pill). */
-data class NowPlaying(val title: String, val artist: String)
+/** What is playing right now (from the TV's media sessions); null hides the pill. */
+data class NowPlaying(
+    val title: String,
+    val artist: String,
+    val packageName: String = "",
+    val playing: Boolean = true,
+    val art: android.graphics.Bitmap? = null,
+)
 
 enum class Tab { ASK, HOME, APPS, MUSIC, PHOTOS, SETTINGS }
 
@@ -28,6 +34,8 @@ data class HomeState(
     val promos: List<AppEntry>,
     val air: AirNow? = null,
     val headlines: List<Headline> = emptyList(),
+    /** Popular series on Netflix and HBO Max in Bulgaria (TMDB); empty shows the two apps' own banners. */
+    val titles: List<com.dzafirov.tvskin.widgets.Promo> = emptyList(),
     val hiddenApps: List<AppEntry> = emptyList(),
     /** Every installed app for the Apps tab: his order first, hidden ones included. */
     val allApps: List<AppEntry> = emptyList(),

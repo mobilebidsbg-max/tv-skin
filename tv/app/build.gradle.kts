@@ -14,6 +14,10 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1"
+        // TMDB key for the Netflix/HBO strip, from the repo's .env (never committed). Empty → the strip shows banners.
+        val tmdbKey = rootProject.file("../.env").takeIf { it.exists() }?.readLines()
+            ?.firstOrNull { it.trim().startsWith("TMDB_API_KEY=") }?.substringAfter("=")?.trim()?.trim('"').orEmpty()
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbKey\"")
     }
 
     buildTypes {
@@ -28,6 +32,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {

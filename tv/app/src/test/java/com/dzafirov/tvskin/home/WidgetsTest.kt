@@ -51,4 +51,43 @@ class WidgetsTest {
         compose.onNodeWithTag("widget:sound").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf("url https://www.theverge.com/science/1024239", "display", "display"), calls)
     }
+
+    @Test
+    fun `now playing shows in the top bar and opens its app`() {
+        val opened = mutableListOf<String>()
+        compose.setContent {
+            CompositionLocalProvider(LocalAppArt provides FakeAppArt) {
+                TvSkinTheme {
+                    HomeScreen(
+                        sampleState().copy(nowPlaying = NowPlaying("Midnight City", "M83", "com.google.android.youtube.tvmusic", playing = true)),
+                        object : HomeActions by NoActions { override fun open(e: com.dzafirov.tvskin.apps.AppEntry) { opened += e.id } },
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("Midnight City").assertIsDisplayed()
+        compose.onNodeWithTag("nowplaying").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("com.google.android.youtube.tvmusic"), opened)
+    }
+
+    @Test
+    fun `title cards show the series and open their app`() {
+        val opened = mutableListOf<String>()
+        val titles = listOf(
+            com.dzafirov.tvskin.widgets.Promo("Wednesday", "https://image.tmdb.org/t/p/w780/x.jpg", "Series · 2022", com.dzafirov.tvskin.widgets.Brand.NETFLIX),
+            com.dzafirov.tvskin.widgets.Promo("The Last of Us", "https://image.tmdb.org/t/p/w780/y.jpg", "Series · 2023", com.dzafirov.tvskin.widgets.Brand.HBO),
+        )
+        compose.setContent {
+            CompositionLocalProvider(LocalAppArt provides FakeAppArt) {
+                TvSkinTheme {
+                    HomeScreen(sampleState().copy(titles = titles), object : HomeActions by NoActions {
+                        override fun open(e: com.dzafirov.tvskin.apps.AppEntry) { opened += e.id }
+                    })
+                }
+            }
+        }
+        compose.onNodeWithText("The Last of Us").assertExists()
+        compose.onNodeWithTag("title:1").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("com.wbd.stream"), opened)
+    }
 }

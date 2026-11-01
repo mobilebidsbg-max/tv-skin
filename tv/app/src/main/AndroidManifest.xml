@@ -47,6 +47,16 @@
             </intent-filter>
         </service>
 
+        <!-- Only so the launcher may read media sessions for the now-playing pill; it reads no notifications. -->
+        <service
+            android:name=".media.MediaListener"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <receiver android:name=".sleep.SleepReceiver" android:exported="false" />
         <receiver android:name=".sleep.BootReceiver" android:exported="true">
             <intent-filter>
