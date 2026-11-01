@@ -198,3 +198,36 @@ Spike B decides the data source:
 - The key used to move control between the two sides, once it is known what keys reach an accessibility service.
 - Tests: unit tests for logic (app order, hidden apps, sleep timer, last app) and screenshots from the TV over adb for the look.
 - A short `docs/TV-INSTALL.md` listing every adb change made to the TV, with its undo command.
+
+## v5 (approved by Dimitar 2026-11-01): what changed on top of the text above
+
+The visual reference is now `docs/design/mockup-v5.html` with screenshots in `docs/design/shots/`. Where this section and the text above disagree, this section wins.
+
+1. **Top bar from v4, which Dimitar asked to bring back:**
+   - **Left:** a now-playing pill (cover art, title, artist, moving bars), shown only while something plays.
+   - **Centre:** glass tabs ✦ · Home · Apps · Music · Photos · ⚙.
+   - **Right:** weather icon and temperature, short date, time, and the avatar "D".
+   - The ✦ (Ask) does nothing until Ask is built; it shows "Ask comes later".
+2. **Hero:**
+   - "Good evening" plus the three smart buttons (Back to… · Side by side · Sleep).
+   - No weather/time line under the greeting; the top bar has it.
+3. **Rows, top to bottom:**
+   - **Apps:** his apps, then Live TV / HDMI / Settings.
+   - **"Today" widgets from v4**, which Dimitar asked to bring back:
+     - Weather (now + next 4 hours);
+     - Up next (calendar);
+     - a Memories photo card;
+     - Quick controls (Sleep timer, Input, Picture mode, Sound output).
+   - **The Netflix / HBO Max strip, last.** Moving focus down to the widgets or the strip scrolls the rows up and hides the hero.
+4. **Original logos (Dimitar, 2026-11-01):** app tiles show each app's own TV banner from the app itself (`loadBanner`). Without a banner, the app's icon sits centred on a dark glass tile. There are no hand-drawn logos.
+5. **Screensaver (Dimitar, 2026-11-01):**
+   - No glass clock.
+   - A small solid-white clock with the date in the bottom-left corner, and the weather (icon, temperature, "Clear · Sofia") in the bottom-right corner.
+   - The Dune wallpaper, sharp, with a soft dark gradient at the bottom.
+   - My call: both corners drift a few px each minute against burn-in. Dimitar may still move the clock to the top.
+6. **Pieces whose data source is still unknown.** Each is checked before it is built, and its widget part stays hidden until it works:
+   - **Calendar:** probably Google Calendar's private iCal link.
+   - **Memories and the Photos tab:** depends on where his photos live.
+   - **Picture mode and Sound output:** whether TCL lets another app change them.
+   - **Music tab and now-playing pill:** media sessions need notification-listener access, granted over the shell rights in plan 2.
+   - **Photos tab contents:** I propose them before building.

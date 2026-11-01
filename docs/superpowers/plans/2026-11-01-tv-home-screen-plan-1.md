@@ -19,6 +19,40 @@
 - **Plan 3:** Spike B (data source), then the Netflix/HBO strip with real titles.
 - **Plan 4:** the iPhone "Send to TV" share extension.
 
+## Changes after v5 (2026-11-01, Dimitar approved v5; this section wins over the tasks below)
+
+- **Task 1 is done:** `docs/design/mockup-v5.html` and `docs/design/shots/v5-{home,widgets,saver}.png`, commits f459947 to 0fdf88c.
+- **Task 4 (home screen) builds the v5 layout:**
+  - **Top bar:**
+    - the now-playing pill composable, hidden while there is no data (data comes in plan 2);
+    - tabs ✦ · Home · Apps · Music · Photos · ⚙;
+    - status: weather, short date, time, avatar.
+  - **Hero:** greeting + 3 smart buttons (no info line).
+  - **Apps row:** tiles use `PackageManager.getApplicationBanner`/`loadBanner`; fallback: the icon centred on a dark glass tile.
+  - **"Today" widgets:** Weather card (now + 4 hours) and Quick controls (Sleep timer, Input; the Picture and Sound tiles are hidden until checked).
+  - **Netflix/HBO strip last.**
+  - Focus on widgets or strip scrolls the rows up 170 dp and hides the hero.
+  - Replace `infoLine` with `statusLine(weather: WeatherNow?, date: String, time: String)`.
+- **Task 5b (new, after Task 5): Tabs.**
+  - **Home**, plus an **Apps** page: a grid of all visible apps, 6 per row, same tiles, hold-OK menu works.
+  - **⚙** opens Settings (Task 9).
+  - **✦, Music and Photos** show a small toast ("Ask comes later" / "Music comes next" / "Photos come next").
+  - Snapshot test: `apps page grid`.
+- **Task 7 (weather):** also parse `hourly.temperature_2m`, `hourly.weather_code` and `hourly.time` (`&hourly=temperature_2m,weather_code&forecast_hours=5`) into `List<HourWeather(hour: Int, tempC: Int, code: Int)>`.
+  - Test `parse next hours`: 5 entries, hours ascending.
+- **Task 10 (screensaver) builds the corner layout instead of the glass clock:**
+  - `ClockFace` becomes `SaverFace(time, dateLine, weather, offset)`.
+  - Bottom-left: time at 56sp SemiBold plus the date at 14sp.
+  - Bottom-right: weather icon, temperature at 56sp, and "Clear · Sofia" at 14sp.
+  - Solid white, with a dark gradient over the bottom 34%.
+  - `driftOffset` stays.
+  - Snapshot: `saver 21_40 on dune`.
+- **Not in plan 1, added to the later list:**
+  - calendar (Up next);
+  - Memories and the Photos tab;
+  - the Music tab and now-playing data;
+  - Picture mode and Sound output controls.
+
 ## Global Constraints
 
 - **Package and versions:**
