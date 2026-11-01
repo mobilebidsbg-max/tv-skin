@@ -18,7 +18,7 @@ class SplitLogicTest {
         assertEquals(PxRect(48, 196, 948, 702), paneBounds(Ratio.HALF, slot = 0))
         assertEquals(PxRect(972, 196, 1872, 702), paneBounds(Ratio.HALF, slot = 1))
         assertEquals(PxRect(48, 118, 1288, 816), paneBounds(Ratio.WIDE, slot = 0))
-        assertEquals(PxRect(1312, 118, 1872, 433), paneBounds(Ratio.WIDE, slot = 1))
+        assertEquals(PxRect(1312, 118, 1872, 558), paneBounds(Ratio.WIDE, slot = 1)) // the TV keeps windows at least 440 px tall
         assertEquals(PxRect(0, 0, 1920, 1080), FULL_SCREEN)
     }
 

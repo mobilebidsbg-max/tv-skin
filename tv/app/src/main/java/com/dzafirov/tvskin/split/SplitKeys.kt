@@ -22,10 +22,10 @@ enum class KeyAction { NONE, OPEN_BAR, CLOSE_BAR, PREVIOUS, NEXT, ACTIVATE, BACK
 data class Routed(val consume: Boolean, val action: KeyAction)
 
 /**
- * Keys while side by side is on. Home can't be caught on this TV (the system takes it first), so **holding Back**
- * opens the control bar: at the first repeat (TV remote) or on a release after [holdMillis] (phone remote, which
- * sends no repeats). A short Back is given back to the app ([KeyAction.BACK]). While the bar is open it takes the
- * arrows, OK and Back; the apps get nothing.
+ * Keys while side by side is on. **Home** opens the control bar; with the bar open, Home goes through (the
+ * launcher then leaves side by side). **Holding Back** opens the bar too: at the first repeat (TV remote) or on a
+ * release after [holdMillis] (phone remote, which sends no repeats); a short Back is given back to the app
+ * ([KeyAction.BACK]). While the bar is open it takes the arrows, OK and Back; the apps get nothing.
  */
 class SplitKeyRouter(private val holdMillis: Long = 500) {
     private var backDown = false
@@ -39,6 +39,10 @@ class SplitKeyRouter(private val holdMillis: Long = 500) {
         }
         val down = action == KeyEvent.ACTION_DOWN
         val up = action == KeyEvent.ACTION_UP
+        if (keyCode == KeyEvent.KEYCODE_HOME) {
+            if (barOpen) return Routed(false, KeyAction.NONE)
+            return Routed(true, if (up) KeyAction.OPEN_BAR else KeyAction.NONE)
+        }
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (down && repeatCount == 0) {
                 backDown = true
@@ -85,7 +89,11 @@ object SplitHub {
     @Synchronized
     fun get(context: Context): SplitController = controller ?: run {
         val app = context.applicationContext
-        SplitController(AdbShell(app), componentOf = { componentOf(app.packageManager, it) }).also { controller = it }
+        SplitController(
+            AdbShell(app),
+            componentOf = { componentOf(app.packageManager, it) },
+            keyService = "${app.packageName}/${SplitKeys::class.java.name}",
+        ).also { controller = it }
     }
 
     fun peek(): SplitController? = controller
@@ -107,7 +115,7 @@ object SplitHub {
 
 /**
  * Sees keys before the apps (switched on once over adb). Does nothing unless side by side is on; then holding
- * Back opens the control bar (see [SplitKeyRouter]).
+ * Home (or holding Back) opens the control bar (see [SplitKeyRouter]).
  * Turn on: `settings put secure enabled_accessibility_services com.dzafirov.tvskin/com.dzafirov.tvskin.split.SplitKeys`
  * and `settings put secure accessibility_enabled 1`.
  */

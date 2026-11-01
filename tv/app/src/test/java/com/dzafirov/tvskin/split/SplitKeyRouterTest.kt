@@ -7,6 +7,7 @@ import android.view.KeyEvent.KEYCODE_DPAD_CENTER
 import android.view.KeyEvent.KEYCODE_DPAD_LEFT
 import android.view.KeyEvent.KEYCODE_DPAD_RIGHT
 import android.view.KeyEvent.KEYCODE_DPAD_UP
+import android.view.KeyEvent.KEYCODE_HOME
 import android.view.KeyEvent.KEYCODE_VOLUME_UP
 import com.dzafirov.tvskin.split.KeyAction.ACTIVATE
 import com.dzafirov.tvskin.split.KeyAction.BACK
@@ -72,5 +73,13 @@ class SplitKeyRouterTest {
     @Test
     fun `volume always goes through`() {
         assertEquals(Routed(false, NONE), key(true, true, KEYCODE_VOLUME_UP, ACTION_DOWN))
+    }
+
+    @Test
+    fun `Home opens the bar, and with the bar open Home goes home`() {
+        assertEquals(Routed(true, NONE), key(true, false, KEYCODE_HOME, ACTION_DOWN))
+        assertEquals(Routed(true, OPEN_BAR), key(true, false, KEYCODE_HOME, ACTION_UP, held = 80))
+        assertEquals(Routed(false, NONE), key(true, true, KEYCODE_HOME, ACTION_DOWN))
+        assertEquals(Routed(false, NONE), key(true, true, KEYCODE_HOME, ACTION_UP, held = 80))
     }
 }

@@ -14,6 +14,8 @@ class SplitController(
     private val shell: Shell,
     private val componentOf: (AppEntry) -> String?,
     private val pause: suspend (Long) -> Unit = { delay(it) },
+    /** The key service to keep switched on (Android switches it off when the app is updated); null in tests. */
+    private val keyService: String? = null,
 ) {
     private val _state = MutableStateFlow<SplitState?>(null)
     val state: StateFlow<SplitState?> = _state
@@ -23,6 +25,7 @@ class SplitController(
     suspend fun start(left: AppEntry, right: AppEntry): Boolean {
         val s = SplitState.start(left, right)
         taskIds.clear()
+        keyService?.let { ensureKeyService(it) }
         for (app in listOf(left, right)) {
             val component = componentOf(app) ?: return false
             shell.run(SplitCommands.launchWindowed(component))
@@ -130,6 +133,12 @@ class SplitController(
     }
 
     private fun id(app: AppEntry) = taskIds[app.id]
+
+    private suspend fun ensureKeyService(service: String) {
+        if (service in shell.run("settings get secure enabled_accessibility_services")) return
+        shell.run("settings put secure enabled_accessibility_services $service")
+        shell.run("settings put secure accessibility_enabled 1")
+    }
 
     private companion object {
         const val SETTLE_MS = 2_500L

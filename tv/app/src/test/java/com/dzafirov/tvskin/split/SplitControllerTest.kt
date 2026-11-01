@@ -135,4 +135,18 @@ class SplitControllerTest {
         assertEquals(web, c.state.value?.controlled)
         assertEquals(false, c.state.value?.barOpen)
     }
+
+    @Test
+    fun `start switches the key service back on when an update turned it off`() = runBlocking {
+        val withKeys = SplitController(shell, componentOf = ::comp, pause = { shell.settle() }, keyService = "a.b/a.b.Keys")
+        withKeys.start(yt, web)
+        assertEquals(
+            listOf(
+                "settings get secure enabled_accessibility_services",
+                "settings put secure enabled_accessibility_services a.b/a.b.Keys",
+                "settings put secure accessibility_enabled 1",
+            ),
+            shell.log.take(3),
+        )
+    }
 }

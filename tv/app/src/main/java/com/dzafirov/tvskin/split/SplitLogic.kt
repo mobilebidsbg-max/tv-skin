@@ -16,7 +16,7 @@ val FULL_SCREEN = PxRect(0, 0, 1920, 1080)
 /** The two panes of mockup v3: 50/50 side by side, or 70/30 with the small one top right. Both 16:9. */
 fun paneBounds(ratio: Ratio, slot: Int): PxRect = when (ratio) {
     Ratio.HALF -> if (slot == 0) PxRect(48, 196, 948, 702) else PxRect(972, 196, 1872, 702)
-    Ratio.WIDE -> if (slot == 0) PxRect(48, 118, 1288, 816) else PxRect(1312, 118, 1872, 433)
+    Ratio.WIDE -> if (slot == 0) PxRect(48, 118, 1288, 816) else PxRect(1312, 118, 1872, 558) // min height 440 px on this TV
 }
 
 /** Shell commands (run through adb on the TV itself). */
