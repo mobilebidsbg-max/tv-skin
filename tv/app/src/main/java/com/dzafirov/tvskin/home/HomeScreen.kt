@@ -112,7 +112,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         if (page == Tab.SETTINGS) {
             SettingsPanel(state, actions, Modifier.align(Alignment.TopEnd).padding(top = 70.dp, end = Sizes.sideMargin, bottom = 30.dp).size(420.dp, 440.dp))
         } else if (page == Tab.APPS) {
-            Band(state.wallpaper, Modifier.offset((-48).dp, 40.dp).unbounded().size(1056.dp, 560.dp))
+            Band(state.wallpaper, Modifier.offset(y = 40.dp).unbounded().size(Sizes.screenWidth, 500.dp))
             AppsPage(
                 state.apps, actions, ::focusFor, movingId,
                 onHold = { menuFor = it },
@@ -122,7 +122,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             Box(Modifier.graphicsLayer { alpha = heroAlpha }) {
                 Frost(state.wallpaper, Modifier.offset((-30).dp, 145.dp).unbounded().size(700.dp, 190.dp), feather = 90.dp, darken = 0.15f)
             }
-            Band(state.wallpaper, Modifier.offset((-48).dp, 300.dp).unbounded().size(1056.dp, 500.dp))
+            Band(state.wallpaper, Modifier.offset(y = 300.dp).fillMaxWidth().unbounded().size(Sizes.screenWidth, 500.dp))
 
             Hero(state, actions, onSleep = { sleepOpen = true; sheetOpener = "smart:sleep" }, focusFor = ::focusFor, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
             if (movingId != null) {

@@ -39,13 +39,20 @@ object PackageAppArt : AppArt {
         data object None : Loaded
     }
 
-    private val cache = HashMap<String, Loaded>()
+    /** At most ~12 MB of artwork; thread-safe (loads run on IO threads). */
+    private val cache = object : android.util.LruCache<String, Loaded>(12 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: Loaded): Int = when (value) {
+            is Loaded.Banner -> value.bitmap.allocationByteCount
+            is Loaded.Icon -> value.bitmap.allocationByteCount
+            Loaded.None -> 1
+        }
+    }
 
     @Composable
     override fun Art(entry: AppEntry, modifier: Modifier) {
         val context = LocalContext.current
-        val loaded by produceState(cache[entry.id], entry.id) {
-            if (value == null) value = withContext(Dispatchers.IO) { load(context, entry).also { cache[entry.id] = it } }
+        val loaded by produceState(cache.get(entry.id), entry.id) {
+            if (value == null) value = withContext(Dispatchers.IO) { load(context, entry).also { cache.put(entry.id, it) } }
         }
         when (val art = loaded) {
             is Loaded.Banner -> Image(art.bitmap.asImageBitmap(), null, modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -62,14 +69,20 @@ object PackageAppArt : AppArt {
         val banner: Drawable? = pm.getLeanbackLaunchIntentForPackage(pkg)?.component
             ?.let { runCatching { pm.getActivityBanner(it) }.getOrNull() }
             ?: runCatching { pm.getApplicationBanner(pkg) }.getOrNull()
-        if (banner != null) return Loaded.Banner(banner.toSizedBitmap(640, 360))
+        if (banner != null) return Loaded.Banner(banner.toSizedBitmap(640, 360, maxW = 256, maxH = 144))
         val icon = runCatching { pm.getApplicationIcon(pkg) }.getOrNull() ?: return Loaded.None
-        return Loaded.Icon(icon.toSizedBitmap(144, 144))
+        return Loaded.Icon(icon.toSizedBitmap(144, 144, maxW = 144, maxH = 144))
     }
 
-    private fun Drawable.toSizedBitmap(fallbackW: Int, fallbackH: Int): Bitmap =
-        toBitmap(
-            width = intrinsicWidth.takeIf { it > 0 } ?: fallbackW,
-            height = intrinsicHeight.takeIf { it > 0 } ?: fallbackH,
-        )
+    /** The drawable as a bitmap no bigger than [maxW] x [maxH] (the tile at 2x), keeping its shape. */
+    private fun Drawable.toSizedBitmap(fallbackW: Int, fallbackH: Int, maxW: Int, maxH: Int): Bitmap {
+        val (w, h) = fitWithin(intrinsicWidth.takeIf { it > 0 } ?: fallbackW, intrinsicHeight.takeIf { it > 0 } ?: fallbackH, maxW, maxH)
+        return toBitmap(width = w, height = h)
+    }
+}
+
+/** [w] x [h] scaled down (never up) to fit inside [maxW] x [maxH], keeping the aspect ratio. */
+fun fitWithin(w: Int, h: Int, maxW: Int, maxH: Int): Pair<Int, Int> {
+    val scale = minOf(1f, maxW.toFloat() / w, maxH.toFloat() / h)
+    return maxOf(1, Math.round(w * scale)) to maxOf(1, Math.round(h * scale))
 }

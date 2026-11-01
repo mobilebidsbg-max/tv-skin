@@ -9,12 +9,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.dzafirov.tvskin.R
 
-/** The still wallpapers (1920x1080) and their pre-blurred, darkened copies (tools/make_blur.py). */
-enum class Wallpaper(@DrawableRes val sharp: Int, @DrawableRes val blurred: Int) {
-    DUNE(R.drawable.wall_dune, R.drawable.wall_dune_blur),
-    DUNES(R.drawable.wall_dunes, R.drawable.wall_dunes_blur),
-    RIDGES(R.drawable.wall_ridges, R.drawable.wall_ridges_blur),
-    GOLDEN(R.drawable.wall_golden, R.drawable.wall_golden_blur);
+/** The still wallpapers (1920x1080), their pre-blurred, darkened copies and 240x135 thumbnails (tools/make_blur.py). */
+enum class Wallpaper(@DrawableRes val sharp: Int, @DrawableRes val blurred: Int, @DrawableRes val thumb: Int) {
+    DUNE(R.drawable.wall_dune, R.drawable.wall_dune_blur, R.drawable.wall_dune_thumb),
+    DUNES(R.drawable.wall_dunes, R.drawable.wall_dunes_blur, R.drawable.wall_dunes_thumb),
+    RIDGES(R.drawable.wall_ridges, R.drawable.wall_ridges_blur, R.drawable.wall_ridges_thumb),
+    GOLDEN(R.drawable.wall_golden, R.drawable.wall_golden_blur, R.drawable.wall_golden_thumb);
 
     companion object {
         val DEFAULT = DUNE

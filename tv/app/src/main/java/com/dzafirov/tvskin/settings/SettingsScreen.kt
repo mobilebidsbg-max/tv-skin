@@ -65,7 +65,7 @@ fun SettingsPanel(state: HomeState, actions: HomeActions, modifier: Modifier = M
                         edge = if (selected) Color.White else Color.Transparent,
                         focusedEdge = Color.White,
                     ) {
-                        Image(painterResource(w.sharp), null, Modifier.fillMaxWidth().height(45.dp), contentScale = ContentScale.Crop)
+                        Image(painterResource(w.thumb), null, Modifier.fillMaxWidth().height(45.dp), contentScale = ContentScale.Crop)
                     }
                 }
             }

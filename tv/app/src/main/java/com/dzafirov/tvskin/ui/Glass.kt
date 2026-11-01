@@ -33,7 +33,7 @@ fun GlassPanel(
 @Composable
 fun Band(wallpaper: Wallpaper, modifier: Modifier = Modifier) {
     Box(modifier) {
-        Frost(wallpaper, Modifier.matchParentSize(), feather = 65.dp, darken = 0f)
+        Frost(wallpaper, Modifier.matchParentSize(), feather = 65.dp, darken = 0f, featherSides = false)
         Box(
             Modifier.matchParentSize().background(
                 Brush.verticalGradient(0f to Color.Transparent, 0.17f to Color(0x4D0E0A06), 1f to Color(0x8C0E0A06)),
