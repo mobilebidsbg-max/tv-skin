@@ -4,21 +4,21 @@ Fill this in with Dimitar present. Write `Pass` or `Fail` in the Result column a
 
 | | |
 |---|---|
-| Date | |
-| App commit (`git rev-parse --short HEAD`) | |
+| Date | 2026-11-01 |
+| App commit (`git rev-parse --short HEAD`) | 8ea1061 |
 | TV | TCL Smart TV Pro, `192.168.8.16`, MAC `44:0f:b4:88:a4:9b` |
-| iPhone 1 (model, iOS) | |
+| iPhone 1 (model, iOS) | iPhone 15 (iPhone15,4), iOS 27.0.1 |
 | iPhone 2 (model, iOS) | |
 
 ## 1. Install and first run (iPhone 1)
 
 | # | Check | Expected | Result | Notes |
 |---|---|---|---|---|
-| 1.1 | `ios/scripts/install.sh` with the iPhone plugged in | Prints "App installed on <name>" | | |
-| 1.2 | Settings → General → VPN & Device Management → trust the developer app | TV Remote opens | | |
-| 1.3 | First launch: Local Network prompt | Allow, the TV appears in the list | | |
-| 1.4 | Pick the TV, type the code shown on it | Pairing succeeds | | |
-| 1.5 | Header after pairing | Shows "Connected" with an orange dot | | |
+| 1.1 | `ios/scripts/install.sh` with the iPhone plugged in | Prints "App installed on <name>" | Pass | Built with Xcode 26.6 on macOS 27.2 (Xcode only starts from its binary there). Needed: Apple ID in Xcode, Developer Mode, an Apple Development certificate (Manage Certificates → +), and Apple's WWDR G3 intermediate in the login keychain (only the expired 2013 one was there). Team `L3KQKP22BK` in `.env`. |
+| 1.2 | Settings → General → VPN & Device Management → trust the developer app | TV Remote opens | Pass | |
+| 1.3 | First launch: Local Network prompt | Allow, the TV appears in the list | Pass | |
+| 1.4 | Pick the TV, type the code shown on it | Pairing succeeds | Pass | |
+| 1.5 | Header after pairing | Shows "Connected" with an orange dot | Pass | |
 
 ## 2. Touchpad gestures
 
@@ -131,14 +131,14 @@ These need the real TV and Dimitar in the room. They do not depend on the iPhone
 
 | # | Check | Expected | Result | Notes |
 |---|---|---|---|---|
-| D.1 | Pair from the Mac CLI with a real code: `tvremote pair --host 192.168.8.16` | Prints `CODE_ON_TV`, then `PAIRED` after the code from the TV | | |
-| D.2 | Pair from the Mac CLI with a wrong code | Prints an error name and exits with status 1, the TV is not paired | | |
-| D.3 | `tvremote watch --host 192.168.8.16 --seconds 60` | Stays open across at least 3 pings, no `closed(...)` line | | |
-| D.4 | `tvremote key` HOME, DOWN, RIGHT, OK | Each does the expected thing on the TV | | |
-| D.5 | `tvremote key --host 192.168.8.16 OK --long` | Long-press OK menu appears | | |
-| D.6 | Choose `Seek.forward` / `Seek.backward` by testing `fastForward` vs `skipForward` vs `dpadRight` in a YouTube video (`tvremote key --host 192.168.8.16 FAST_FORWARD`, then `SKIP_FORWARD`, then `DPAD_RIGHT`; same for the backward keys) | Pick the key that jumps about 10 s and write it down | | |
-| D.7 | Verify each AppShortcut link opens the right package (YouTube, Netflix, Prime Video, Apple TV, Disney+, YouTube Music) | Each opens its own app; fix the link if not | | |
-| D.8 | Typing via SEARCH + text: `tvremote key --host 192.168.8.16 SEARCH`, then `tvremote text --host 192.168.8.16 "hello"` | The word appears in the search field | | |
+| D.1 | Pair from the Mac CLI with a real code: `tvremote pair --host 192.168.8.16` | Prints `CODE_ON_TV`, then `PAIRED` after the code from the TV | Pass | 2026-11-01. Code read from the TV screen over adb. |
+| D.2 | Pair from the Mac CLI with a wrong code | Prints an error name and exits with status 1, the TV is not paired | Not run | Skipped so the working pairing stays in place. |
+| D.3 | `tvremote watch --host 192.168.8.16 --seconds 60` | Stays open across at least 3 pings, no `closed(...)` line | Pass (25 s) | Ran 25 s, not 60: `ready`, `volume`, `currentApp` events, no drop. The only `closed` line is the timer ending (exit 0). |
+| D.4 | `tvremote key` HOME, DOWN, RIGHT, OK | Each does the expected thing on the TV | Pass | HOME opened Google TV home; DOWN/RIGHT moved the focus. |
+| D.5 | `tvremote key --host 192.168.8.16 OK --long` | Long-press OK menu appears | Pass | Netflix tile: Move / Open / View in Play Store menu. |
+| D.6 | Choose `Seek.forward` / `Seek.backward` by testing `fastForward` vs `skipForward` vs `dpadRight` in a YouTube video (`tvremote key --host 192.168.8.16 FAST_FORWARD`, then `SKIP_FORWARD`, then `DPAD_RIGHT`; same for the backward keys) | Pick the key that jumps about 10 s and write it down | Open | YouTube on this TV: FAST_FORWARD / REWIND pause and open the seek bar on the 1st press, each further press moves about 10 s, and play resumes only on PLAY. SKIP_FORWARD / SKIP_BACKWARD do nothing. DPAD_RIGHT with the controls hidden only shows the controls. No single key jumps 10 s and keeps playing. |
+| D.7 | Verify each AppShortcut link opens the right package (YouTube, Netflix, Prime Video, Apple TV, Disney+, YouTube Music) | Each opens its own app; fix the link if not | 5 of 6 | YouTube, Netflix, Prime Video, Apple TV, Disney+ open their own package. **YouTube Music fails**: `https://music.youtube.com` opens the TV browser (`com.internet.tvbrowser`); the app does not verify that domain. `market://launch?id=…` and `intent://…` links do nothing. Turning on the TV's link selection for YT Music made it open YouTube instead (reverted). |
+| D.8 | Typing via SEARCH + text: `tvremote key --host 192.168.8.16 SEARCH`, then `tvremote text --host 192.168.8.16 "hello"` | The word appears in the search field | Fail | SEARCH opens Google Assistant, which first asks about "Hey Google" hands-free (left unanswered for Dimitar). YouTube search draws its own keyboard, so `text` returns `noTextField`. Retest typing from the iPhone (5.1) in a real Android text field. |
 | D.9 | Does POWER over the protocol, or Wake-on-LAN (`tvremote wake --mac 44:0f:b4:88:a4:9b`), wake the TV from standby? | Note which of the two works (or both, or neither) | | |
 
 ## Result
