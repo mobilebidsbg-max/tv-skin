@@ -1,6 +1,7 @@
 package com.dzafirov.tvskin.split
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
@@ -80,6 +81,11 @@ class SplitKeyRouter(private val holdMillis: Long = 500) {
     }
 }
 
+/** [flags] with key filtering switched on only while side by side is on. */
+fun keyFilterFlags(flags: Int, splitActive: Boolean): Int =
+    if (splitActive) flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+    else flags and AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS.inv()
+
 /** The one side-by-side controller in the app, shared by the home screen and [SplitKeys]. */
 object SplitHub {
     private var controller: SplitController? = null
@@ -121,6 +127,33 @@ object SplitHub {
  */
 class SplitKeys : AccessibilityService() {
     private val router = SplitKeyRouter()
+    private var watch: Job? = null
+
+    /**
+     * Key filtering is switched on only while side by side is on. With it on, every key press on the TV waits for
+     * this service; on a TV short of memory that wait was noticeable in every app (seen with YouTube Music).
+     */
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        val c = SplitHub.get(this)
+        watch?.cancel()
+        watch = SplitHub.scope.launch {
+            c.state.collect { s ->
+                val info = serviceInfo ?: return@collect
+                val flags = keyFilterFlags(info.flags, s != null)
+                if (flags != info.flags) {
+                    info.flags = flags
+                    serviceInfo = info
+                    Log.i(TAG, "key filtering ${if (s != null) "on" else "off"}")
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        watch?.cancel()
+        super.onDestroy()
+    }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
         val c = SplitHub.peek() ?: return false

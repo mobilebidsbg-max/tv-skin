@@ -31,6 +31,9 @@ class FakeShell(private val trampolines: Set<String> = emptySet()) : Shell {
             val v = m.groupValues.drop(1).map { it.toInt() }
             bounds[v[0]] = PxRect(v[1], v[2], v[3], v[4])
         }
+        if (cmd == SplitCommands.WINDOWS) return tasks.entries.joinToString("\n") { (pkg, id) ->
+            "  * Task{abc #$id type=standard A=10000:$pkg U=0 visible=true mode=freeform translucent=false sz=1}"
+        }
         if (cmd == SplitCommands.LIST) return tasks.entries.joinToString("\n") { (pkg, id) ->
             val b = bounds[id] ?: PxRect(690, 454, 1770, 1061)
             "  taskId=$id: $pkg/$pkg.Main bounds=[${b.left},${b.top}][${b.right},${b.bottom}] userId=0 visible=true"
@@ -108,11 +111,12 @@ class SplitControllerTest {
     }
 
     @Test
-    fun `leaving with Home restores sound and leaves both apps full size`() = runBlocking {
+    fun `leaving with Home restores sound and closes both windows`() = runBlocking {
         c.start(yt, web); shell.log.clear()
         c.leave()
+        // A window left behind (even full size) stays above normal apps and takes their keys (seen on the TV).
         assertEquals(
-            listOf(SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id), SplitCommands.resize(102, FULL_SCREEN), SplitCommands.resize(101, FULL_SCREEN)),
+            listOf(SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id), SplitCommands.remove(102), SplitCommands.remove(101)),
             actions(),
         )
         assertNull(c.state.value)
@@ -169,13 +173,11 @@ class SplitControllerTest {
     }
 
     @Test
-    fun `left-over small windows from a session that was cut off are made full size`() = runBlocking {
+    fun `left-over windows are closed when side by side is off`() = runBlocking {
         shell.tasks[yt.id] = 200
-        shell.bounds[200] = PxRect(48, 196, 948, 702)
-        shell.tasks["com.dzafirov.tvskin"] = 201
-        shell.bounds[201] = FULL_SCREEN
+        shell.tasks[web.id] = 201
         c.tidyUp(ownPackage = "com.dzafirov.tvskin")
-        assertEquals(listOf(SplitCommands.resize(200, FULL_SCREEN)), actions())
+        assertEquals(listOf(SplitCommands.WINDOWS, SplitCommands.remove(200), SplitCommands.remove(201)), shell.log)
     }
 
     @Test

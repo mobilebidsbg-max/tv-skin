@@ -133,9 +133,13 @@ class MainActivity : ComponentActivity(), HomeActions {
         refreshSleep()
         refreshWeather()
         // Reading packages, inputs and usage events is slow on the TV: off the main thread.
-        // Leftover small windows from a side-by-side session that was cut off go back to full size.
+        // Leftover side-by-side windows are closed: a window stays above normal apps and takes their keys.
         com.dzafirov.tvskin.split.SplitHub.get(this).let { split ->
-            com.dzafirov.tvskin.split.SplitHub.scope.launch { runCatching { split.tidyUp(packageName) } }
+            com.dzafirov.tvskin.split.SplitHub.scope.launch {
+                runCatching { split.tidyUp(packageName) }
+                    .onSuccess { if (it.isNotEmpty()) android.util.Log.i("Split", "Closed leftover windows $it") }
+                    .onFailure { android.util.Log.w("Split", "tidyUp failed", it) }
+            }
         }
         lifecycleScope.launch(Dispatchers.Default) {
             model.loadApps()

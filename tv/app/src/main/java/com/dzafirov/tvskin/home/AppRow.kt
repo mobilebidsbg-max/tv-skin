@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,9 +53,11 @@ fun AppRow(
     movingId: String?,
     onHold: (AppEntry) -> Unit,
     modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
 ) {
     LazyRow(
-        modifier = modifier.height(Sizes.tileHeight + 30.dp),
+        state = listState,
+        modifier = modifier.height(Sizes.tileHeight + 30.dp).testTag("row:apps"),
         contentPadding = PaddingValues(horizontal = Sizes.sideMargin),
         horizontalArrangement = Arrangement.spacedBy(Sizes.rowGap),
     ) {

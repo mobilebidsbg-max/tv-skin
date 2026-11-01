@@ -91,4 +91,16 @@ class SplitLogicTest {
         assertEquals(FULL_SCREEN, s.toggleFull().boundsOf(yt)) // full screen enlarges the app in control
         assertEquals(paneBounds(Ratio.HALF, 1), s.toggleFull().boundsOf(web))
     }
+
+    @Test
+    fun `free-form windows are found in the activity dump`() {
+        val dump = """
+            |  * Task{2d62e16 #707 type=standard A=10063:com.google.android.youtube.tv.main U=0 visible=true visibleRequested=true mode=freeform translucent=false sz=1}
+            |  * Task{9e91aa7 #711 type=standard A=10071:com.netflix.ninja U=0 visible=false visibleRequested=false mode=fullscreen translucent=false sz=1}
+            |  * Task{5d752bb #704 type=home A=10128:com.dzafirov.tvskin U=0 rootTaskId=1 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+            |      * Task{2d62e16 #707 type=standard A=10063:com.google.android.youtube.tv.main U=0 visible=true visibleRequested=true mode=freeform translucent=false sz=1}
+            |  * Task{abc #712 type=standard A=10123:com.wbd.stream:1358483997 U=0 visible=false visibleRequested=false mode=freeform translucent=false sz=1}
+        """.trimMargin()
+        assertEquals(listOf(707, 712), freeformTaskIds(dump))
+    }
 }

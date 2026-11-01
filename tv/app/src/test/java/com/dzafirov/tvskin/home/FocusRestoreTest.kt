@@ -8,6 +8,8 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.requestFocus
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.dzafirov.tvskin.apps.AppEntry
 import com.dzafirov.tvskin.ui.LocalAppArt
@@ -112,6 +114,20 @@ class FocusRestoreTest {
         state.value = state.value.copy(apps = emptyList(), tvItems = emptyList())
         show()
         state.value = state.value.copy(apps = apps, tvItems = sampleTvItems)
+        compose.waitForIdle()
+        compose.onNodeWithTag("app:com.google.android.youtube.tv").assertIsFocused()
+    }
+
+    @Test
+    fun `Home brings focus back to the first app even when the row has scrolled away from it`() {
+        val many = sampleApps + (1..8).map { app("com.example.app$it", "App $it") }
+        state.value = state.value.copy(apps = many)
+        show()
+        compose.onNodeWithTag("row:apps").performScrollToIndex(many.size + 2)
+        compose.onNodeWithTag("tv:settings").requestFocus()
+        compose.waitForIdle()
+        compose.onNodeWithTag("app:com.google.android.youtube.tv").assertDoesNotExist() // scrolled out of the row
+        state.value = state.value.copy(resetToken = state.value.resetToken + 1)
         compose.waitForIdle()
         compose.onNodeWithTag("app:com.google.android.youtube.tv").assertIsFocused()
     }

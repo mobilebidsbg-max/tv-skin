@@ -61,11 +61,14 @@ class SplitController(
         _state.value = null
     }
 
-    /** Left with Home: both apps keep running, full size, with their sound back. */
+    /**
+     * Left with Home: sound back, both windows closed. A window left behind, even at full size, stays above normal
+     * full-screen apps on this TV and takes their keys, so apps must never stay windowed.
+     */
     suspend fun leave() {
         val s = _state.value ?: return
         restoreSound(s)
-        listOf(s.left, s.right).forEach { app -> id(app)?.let { shell.run(SplitCommands.resize(it, FULL_SCREEN)) } }
+        listOf(s.left, s.right).forEach { app -> id(app)?.let { shell.run(SplitCommands.remove(it)) } }
         _state.value = null
     }
 
@@ -96,18 +99,16 @@ class SplitController(
     }
 
     /**
-     * When side by side is off: any app window that is still small (the launcher was restarted mid-session, e.g.
-     * after an update) is made full size, so apps never open in a leftover window.
+     * Back on the home screen with side by side off: close every leftover free-form window (from End, or a session
+     * cut off by an update), so apps opened from here are normal full-screen apps that get the keys.
      */
-    suspend fun tidyUp(ownPackage: String) {
-        if (_state.value != null) return
-        val list = shell.run(SplitCommands.LIST)
-        Regex("""taskId=(\d+): ([\w.]+)/""").findAll(list).forEach { m ->
-            val id = m.groupValues[1].toInt()
-            if (m.groupValues[2] == ownPackage) return@forEach
-            val b = boundsFor(id, list) ?: return@forEach
-            if (b != FULL_SCREEN) shell.run(SplitCommands.resize(id, FULL_SCREEN))
-        }
+    /** Returns the task ids it closed. */
+    @Suppress("UNUSED_PARAMETER")
+    suspend fun tidyUp(ownPackage: String): List<Int> {
+        if (_state.value != null) return emptyList()
+        val ids = freeformTaskIds(shell.run(SplitCommands.WINDOWS))
+        ids.forEach { shell.run(SplitCommands.remove(it)) }
+        return ids
     }
 
     fun openBar() { _state.value = _state.value?.openBar() }

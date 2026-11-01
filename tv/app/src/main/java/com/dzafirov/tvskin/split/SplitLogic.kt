@@ -23,6 +23,9 @@ fun paneBounds(ratio: Ratio, slot: Int): PxRect = when (ratio) {
 object SplitCommands {
     const val LIST = "cmd activity stack list"
 
+    /** The activity dump: the only place that says which tasks are free-form windows. */
+    const val WINDOWS = "dumpsys activity activities"
+
     /** The app's own TV launch intent in a free-form window; launching it again brings that window to the front. */
     fun launchWindowed(component: String) =
         "am start --windowingMode 5 -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -n $component"
@@ -47,6 +50,12 @@ private val TASK_LINE = Regex("""taskId=(\d+): ([\w.]+)/\S*(?: bounds=\[(\d+),(\
  */
 fun taskIdFor(pkg: String, stackList: String): Int? =
     TASK_LINE.findAll(stackList).filter { it.groupValues[2] == pkg }.map { it.groupValues[1].toInt() }.maxOrNull()
+
+private val FREEFORM_TASK = Regex("""\* Task\{\w+ #(\d+) type=standard .* mode=freeform""")
+
+/** The ids of all free-form (windowed) app tasks in `dumpsys activity activities` output. */
+fun freeformTaskIds(dump: String): List<Int> =
+    FREEFORM_TASK.findAll(dump).map { it.groupValues[1].toInt() }.distinct().toList()
 
 /** The window bounds of task [taskId] in `cmd activity stack list` output. */
 fun boundsFor(taskId: Int, stackList: String): PxRect? =

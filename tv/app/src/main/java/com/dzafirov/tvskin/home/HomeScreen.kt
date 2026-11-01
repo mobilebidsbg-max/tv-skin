@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     fun Modifier.section(s: Section) = onFocusChanged { if (it.hasFocus) section = s }
 
     var page by remember { mutableStateOf(Tab.HOME) }
+    val appRowState = rememberLazyListState()
     var menuFor by remember { mutableStateOf<AppEntry?>(null) }
     var inputsOpen by remember { mutableStateOf(false) }
     var sleepOpen by remember { mutableStateOf(false) }
@@ -150,6 +152,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
                 state.apps, state.tvItems, actions, ::focusFor, movingId,
                 onHold = { menuFor = it },
                 modifier = Modifier.offset(y = Sizes.appsTop).section(Section.UPPER),
+                listState = appRowState,
             )
 
             Text(stringResource(R.string.today), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.widgetsLabelTop))
@@ -260,6 +263,8 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         firstPick = null
         movingId = null
         section = Section.UPPER
+        // The first app may be scrolled out of the row (not composed, so it can't take focus): scroll back first.
+        runCatching { appRowState.scrollToItem(0) }
         pendingFocus = state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id
     }
 
