@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import com.dzafirov.tvskin.ui.Frost
+import com.dzafirov.tvskin.ui.LocalAppArt
+import com.dzafirov.tvskin.apps.AppEntry
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,9 +53,9 @@ import com.dzafirov.tvskin.weather.weatherIcon
 @Composable
 fun TopBar(state: HomeState, selected: Tab, onTab: (Tab) -> Unit, onOpenApp: (String) -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(Sizes.topBarHeight)) {
-        state.nowPlaying?.let { np ->
-            NowPlayingPill(np, state.wallpaper, onOpen = { onOpenApp(np.packageName) }, modifier = Modifier.align(Alignment.CenterStart))
-        }
+        // YouTube Music, always here by design: what it plays now, else its last song, else an invitation.
+        val music = state.nowPlaying?.takeIf { it.packageName == YT_MUSIC } ?: state.lastMusic
+        NowPlayingPill(music, state.wallpaper, onOpen = { onOpenApp(YT_MUSIC) }, modifier = Modifier.align(Alignment.CenterStart))
         Tabs(state.wallpaper, selected, onTab, Modifier.align(Alignment.Center))
         Status(state, Modifier.align(Alignment.CenterEnd))
     }
@@ -61,7 +63,7 @@ fun TopBar(state: HomeState, selected: Tab, onTab: (Tab) -> Unit, onOpenApp: (St
 
 /** What's playing (v5 top-left): cover, title, artist and moving bars while it plays; OK opens that app. */
 @Composable
-private fun NowPlayingPill(np: NowPlaying, wallpaper: Wallpaper, onOpen: () -> Unit, modifier: Modifier) {
+private fun NowPlayingPill(np: NowPlaying?, wallpaper: Wallpaper, onOpen: () -> Unit, modifier: Modifier) {
     FocusSurface(
         onClick = onOpen,
         modifier = modifier.height(32.dp).testTag("nowplaying"),
@@ -75,17 +77,20 @@ private fun NowPlayingPill(np: NowPlaying, wallpaper: Wallpaper, onOpen: () -> U
         Frost(wallpaper, Modifier.matchParentSize(), feather = 0.dp, darken = 0.05f)
         Box(Modifier.matchParentSize().background(TvColors.GlassFill))
         Row(Modifier.padding(start = 5.dp, end = 12.dp).align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            val art = np.art
+            val art = np?.art
             if (art != null) {
                 Image(art.asImageBitmap(), null, Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
             } else {
-                Box(Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.15f)))
+                Box(Modifier.size(22.dp).clip(RoundedCornerShape(6.dp))) {
+                    LocalAppArt.current.Art(AppEntry(YT_MUSIC, "YouTube Music", AppEntry.Kind.APP), Modifier)
+                }
             }
-            Text(np.title, style = TvType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 150.dp))
-            if (np.artist.isNotEmpty()) {
-                Text(np.artist, style = TvType.body.copy(fontSize = 11.sp), color = TvColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
+            Text(np?.title ?: "YouTube Music", style = TvType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 150.dp))
+            val artist = np?.artist ?: "Play something"
+            if (artist.isNotEmpty()) {
+                Text(artist, style = TvType.body.copy(fontSize = 11.sp), color = TvColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
             }
-            EqBars(np.playing)
+            if (np != null) EqBars(np.playing)
         }
     }
 }
@@ -173,3 +178,6 @@ private fun Status(state: HomeState, modifier: Modifier) {
 
 /** Keeps a composable in layout but invisible (the hero while the rows are scrolled up). */
 fun Modifier.visible(alpha: Float) = this.alpha(alpha)
+
+/** YouTube Music for Android TV. */
+const val YT_MUSIC = "com.google.android.youtube.tvmusic"

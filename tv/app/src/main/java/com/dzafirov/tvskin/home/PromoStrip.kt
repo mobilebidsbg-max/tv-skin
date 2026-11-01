@@ -11,6 +11,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Brush
@@ -40,17 +42,35 @@ fun PromoStrip(promos: List<AppEntry>, titles: List<Promo>, actions: HomeActions
         return
     }
     Row(modifier.padding(start = Sizes.sideMargin), horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-        promos.forEach { entry ->
-            FocusSurface(
-                onClick = { actions.open(entry) },
-                modifier = Modifier.size(Sizes.promoWidth, Sizes.promoHeight).testTag("promo:${entry.id}"),
-                radius = Sizes.promoRadius,
-                container = Color.Black,
-                focusedContainer = Color.Black,
-                focusedContent = Color.White,
-                focusedEdge = Color.White.copy(alpha = 0.85f),
-            ) {
-                LocalAppArt.current.Art(entry, Modifier)
+        promos.forEach { entry -> BrandBanner(entry, actions) }
+    }
+}
+
+/** A wide banner in the brand's colours with its original logo (the app's own TV banner). */
+@Composable
+private fun BrandBanner(entry: AppEntry, actions: HomeActions) {
+    val (from, to, tagline) = when (entry.id) {
+        "com.netflix.ninja" -> Triple(Color(0xFF050505), Color(0xFF5A0A0E), "Series, films and Netflix originals")
+        "com.wbd.stream" -> Triple(Color(0xFF0B0F3D), Color(0xFF4B12C9), "HBO originals, series and films")
+        else -> Triple(Color(0xFF151515), Color(0xFF333333), entry.label)
+    }
+    FocusSurface(
+        onClick = { actions.open(entry) },
+        modifier = Modifier.size(412.dp, Sizes.promoHeight).testTag("banner:${entry.id}"),
+        radius = Sizes.promoRadius,
+        container = Color.Black,
+        focusedContainer = Color.Black,
+        focusedContent = Color.White,
+        focusedEdge = Color.White.copy(alpha = 0.85f),
+    ) {
+        Box(Modifier.matchParentSize().background(Brush.linearGradient(listOf(from, to))))
+        // A soft light from the top right, so the banner reads as a surface rather than a flat block.
+        Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(900f, -60f), radius = 520f)))
+        Row(Modifier.align(Alignment.CenterStart).padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(96.dp, 54.dp).clip(RoundedCornerShape(10.dp))) { LocalAppArt.current.Art(entry, Modifier) }
+            Column(Modifier.padding(start = 16.dp)) {
+                Text(entry.label, style = TvType.body.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = Color.White, maxLines = 1)
+                Text(tagline, style = TvType.body.copy(fontSize = 10.sp), color = Color.White.copy(alpha = 0.75f), maxLines = 1, modifier = Modifier.padding(top = 3.dp))
             }
         }
     }

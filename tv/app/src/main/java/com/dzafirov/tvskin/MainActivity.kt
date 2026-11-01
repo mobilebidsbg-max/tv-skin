@@ -44,7 +44,16 @@ class MainActivity : ComponentActivity(), HomeActions {
     private val air = com.dzafirov.tvskin.widgets.AirRepository()
     private val news = com.dzafirov.tvskin.widgets.HeadlinesRepository()
     private val titles = com.dzafirov.tvskin.widgets.PromosRepository(BuildConfig.TMDB_API_KEY)
-    private val nowPlaying by lazy { com.dzafirov.tvskin.media.NowPlayingWatcher(this) { np -> model.update { it.copy(nowPlaying = np) } } }
+    private val nowPlaying by lazy {
+        com.dzafirov.tvskin.media.NowPlayingWatcher(this) { np ->
+            model.update { it.copy(nowPlaying = np) }
+            // Remember YouTube Music's last song for the always-on pill (shown paused when nothing plays).
+            if (np != null && np.packageName == com.dzafirov.tvskin.home.YT_MUSIC) {
+                getSharedPreferences("music", MODE_PRIVATE).edit().putString("title", np.title).putString("artist", np.artist).apply()
+                model.update { it.copy(lastMusic = np.copy(playing = false)) }
+            }
+        }
+    }
     private lateinit var sleep: SleepScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +69,10 @@ class MainActivity : ComponentActivity(), HomeActions {
         sleep = SleepScheduler(this)
         launcher = AppLauncher(this, onLaunched = { lastApps.record(it) })
         model.tick()
+        getSharedPreferences("music", MODE_PRIVATE).getString("title", null)?.let { title ->
+            val artist = getSharedPreferences("music", MODE_PRIVATE).getString("artist", "").orEmpty()
+            model.update { it.copy(lastMusic = com.dzafirov.tvskin.home.NowPlaying(title, artist, com.dzafirov.tvskin.home.YT_MUSIC, playing = false)) }
+        }
         // This is the home screen: Back has nowhere to go.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) { override fun handleOnBackPressed() = Unit })
         setContent {

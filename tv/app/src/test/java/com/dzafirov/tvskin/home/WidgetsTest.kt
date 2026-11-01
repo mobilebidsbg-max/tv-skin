@@ -1,8 +1,10 @@
 package com.dzafirov.tvskin.home
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -89,5 +91,35 @@ class WidgetsTest {
         compose.onNodeWithText("The Last of Us").assertExists()
         compose.onNodeWithTag("title:1").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf("com.wbd.stream"), opened)
+    }
+
+    @Test
+    fun `YouTube Music is always in the top bar, with the last song when nothing plays`() {
+        val opened = mutableListOf<String>()
+        val music = "com.google.android.youtube.tvmusic"
+        val state = mutableStateOf(sampleState())
+        compose.setContent {
+            CompositionLocalProvider(LocalAppArt provides FakeAppArt) {
+                TvSkinTheme { HomeScreen(state.value, object : HomeActions by NoActions { override fun open(e: com.dzafirov.tvskin.apps.AppEntry) { opened += e.id } }) }
+            }
+        }
+        compose.onNodeWithTag("nowplaying").assertTextContains("YouTube Music", substring = true).assertTextContains("Play something", substring = true)
+        compose.onNodeWithTag("nowplaying").performSemanticsAction(SemanticsActions.OnClick)
+        state.value = state.value.copy(lastMusic = NowPlaying("Midnight City", "M83", music, playing = false))
+        compose.onNodeWithTag("nowplaying").assertTextContains("Midnight City", substring = true)
+        assertEquals(listOf(music), opened)
+    }
+
+    @Test
+    fun `Netflix and HBO Max banners open their apps`() {
+        val opened = mutableListOf<String>()
+        compose.setContent {
+            CompositionLocalProvider(LocalAppArt provides FakeAppArt) {
+                TvSkinTheme { HomeScreen(sampleState(), object : HomeActions by NoActions { override fun open(e: com.dzafirov.tvskin.apps.AppEntry) { opened += e.id } }) }
+            }
+        }
+        compose.onNodeWithTag("banner:com.netflix.ninja").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithTag("banner:com.wbd.stream").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("com.netflix.ninja", "com.wbd.stream"), opened)
     }
 }

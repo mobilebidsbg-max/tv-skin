@@ -26,6 +26,8 @@ data class HomeState(
     val weather: WeatherNow?,
     val hours: List<HourWeather>,
     val nowPlaying: NowPlaying?,
+    /** The last song YouTube Music played (kept across restarts), shown when nothing plays. */
+    val lastMusic: NowPlaying? = null,
     val lastApp: AppEntry?,
     val lastAppSubtitle: String?,
     val sleepLeftMinutes: Int?,

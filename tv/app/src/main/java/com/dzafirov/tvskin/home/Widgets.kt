@@ -89,20 +89,38 @@ private fun WeatherCard(state: HomeState) {
     }
 }
 
+/** "Controls": four round buttons with a label and value underneath, like the other cards' layout. */
 @Composable
 private fun QuickControls(state: HomeState, actions: HomeActions, onSleep: () -> Unit, onInputs: () -> Unit, focusFor: (String) -> FocusRequester) {
     GlassPanel(state.wallpaper, Modifier.size(Sizes.widgetWidth, Sizes.widgetHeight), radius = Sizes.widgetRadius) {
-        Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            val sleepValue = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                QuickTile(R.drawable.ic_moon, stringResource(R.string.sleep_timer), sleepValue, onSleep, "widget:sleep", Modifier.weight(1f).focusRequester(focusFor("widget:sleep")))
-                QuickTile(R.drawable.ic_input, stringResource(R.string.input), stringResource(R.string.choose), onInputs, "widget:input", Modifier.weight(1f).focusRequester(focusFor("widget:input")))
-            }
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                QuickTile(R.drawable.ic_sun, stringResource(R.string.picture), stringResource(R.string.adjust), actions::openDisplaySound, "widget:picture", Modifier.weight(1f))
-                QuickTile(R.drawable.ic_speaker, stringResource(R.string.sound), stringResource(R.string.adjust), actions::openDisplaySound, "widget:sound", Modifier.weight(1f))
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(stringResource(R.string.controls_title), style = TvType.body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = Color.White)
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                val sleepValue = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
+                RoundControl(R.drawable.ic_moon, stringResource(R.string.sleep), sleepValue, onSleep, "widget:sleep", Modifier.focusRequester(focusFor("widget:sleep")))
+                RoundControl(R.drawable.ic_input, stringResource(R.string.input), stringResource(R.string.choose), onInputs, "widget:input", Modifier.focusRequester(focusFor("widget:input")))
+                RoundControl(R.drawable.ic_sun, stringResource(R.string.picture), stringResource(R.string.adjust), actions::openDisplaySound, "widget:picture")
+                RoundControl(R.drawable.ic_speaker, stringResource(R.string.sound), stringResource(R.string.adjust), actions::openDisplaySound, "widget:sound")
             }
         }
+    }
+}
+
+@Composable
+private fun RoundControl(icon: Int, label: String, value: String, onClick: () -> Unit, tag: String, modifier: Modifier = Modifier) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        FocusSurface(
+            onClick = onClick,
+            modifier = modifier.size(38.dp).testTag(tag),
+            radius = 19.dp,
+            focusedScale = 1.12f,
+            container = Color.White.copy(alpha = 0.14f),
+            edge = Color.White.copy(alpha = 0.12f),
+        ) {
+            Icon(painterResource(icon), null, Modifier.size(17.dp).align(Alignment.Center))
+        }
+        Text(label, style = TvType.body.copy(fontSize = 8.5.sp, fontWeight = FontWeight.SemiBold), color = Color.White, maxLines = 1, modifier = Modifier.padding(top = 5.dp))
+        Text(value, style = TvType.body.copy(fontSize = 8.sp), color = Color.White.copy(alpha = 0.65f), maxLines = 1)
     }
 }
 
@@ -157,24 +175,3 @@ private fun HeadlinesCard(state: HomeState, actions: HomeActions) {
     }
 }
 
-@Composable
-private fun QuickTile(icon: Int, label: String, value: String, onClick: () -> Unit, tag: String, modifier: Modifier) {
-    FocusSurface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth().testTag(tag),
-        radius = 11.dp,
-        container = Color.White.copy(alpha = 0.13f),
-    ) {
-        Row(Modifier.padding(horizontal = 7.dp).align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
-            val onWhite = LocalContentColor.current != Color.White
-            Box(
-                Modifier.size(20.dp).clip(CircleShape).background(if (onWhite) TvColors.Ink.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center,
-            ) { Icon(painterResource(icon), null, Modifier.size(12.dp)) }
-            Column(Modifier.padding(start = 6.dp)) {
-                Text(label, style = TvType.body.copy(fontSize = 8.5.sp), color = LocalContentColor.current.copy(alpha = 0.72f))
-                Text(value, style = TvType.body.copy(fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold))
-            }
-        }
-    }
-}
