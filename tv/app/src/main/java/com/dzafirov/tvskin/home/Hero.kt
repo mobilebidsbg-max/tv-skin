@@ -32,9 +32,9 @@ import com.dzafirov.tvskin.ui.Sizes
 import com.dzafirov.tvskin.ui.TvColors
 import com.dzafirov.tvskin.ui.TvType
 
-/** Greeting and the three smart buttons: Back to… · Side by side · Sleep. */
+/** Greeting and the smart buttons: Back to… · Sleep. */
 @Composable
-fun Hero(state: HomeState, actions: HomeActions, onSplit: () -> Unit, onSleep: () -> Unit, focusFor: (String) -> FocusRequester, modifier: Modifier = Modifier) {
+fun Hero(state: HomeState, actions: HomeActions, onSleep: () -> Unit, focusFor: (String) -> FocusRequester, modifier: Modifier = Modifier) {
     Column(modifier) {
         Text(state.greeting, style = TvType.greeting)
         Spacer(Modifier.height(15.dp))
@@ -50,9 +50,6 @@ fun Hero(state: HomeState, actions: HomeActions, onSplit: () -> Unit, onSleep: (
                         LocalAppArt.current.Art(app, Modifier)
                     }
                 }
-            }
-            SmartButton(stringResource(R.string.side_by_side), stringResource(R.string.side_by_side_sub), onSplit, "smart:split", Modifier.focusRequester(focusFor("smart:split"))) {
-                SmartIcon(R.drawable.ic_split)
             }
             val sleepSub = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
             SmartButton(stringResource(R.string.sleep), sleepSub, onSleep, "smart:sleep", Modifier.focusRequester(focusFor("smart:sleep"))) {

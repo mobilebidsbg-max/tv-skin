@@ -13,7 +13,6 @@ robolectric = "4.17"
 roborazzi = "1.77.0"
 json = "20260814"
 profileinstaller = "1.4.1"
-dadb = "2.0.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -33,7 +32,6 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 json = { module = "org.json:json", version.ref = "json" }
-dadb = { module = "dev.mobile:dadb", version.ref = "dadb" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 
 [plugins]

@@ -81,7 +81,6 @@ fun sampleState(
 
 object NoActions : HomeActions {
     override fun open(e: AppEntry) {}
-    override fun startSplit(left: AppEntry, right: AppEntry) {}
     override fun setSleep(minutes: Int?) {}
     override fun hide(e: AppEntry) {}
     override fun move(e: AppEntry, delta: Int) {}

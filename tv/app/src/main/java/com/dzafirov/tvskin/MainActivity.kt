@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.dzafirov.tvskin.apps.AppEntry
 import com.dzafirov.tvskin.apps.AppLauncher
@@ -80,13 +79,7 @@ class MainActivity : ComponentActivity(), HomeActions {
             TvSkinTheme {
                 val state by model.state
                 androidx.compose.runtime.CompositionLocalProvider(com.dzafirov.tvskin.ui.LocalUhdWallpaper provides true) {
-                    val split by com.dzafirov.tvskin.split.SplitHub.get(this@MainActivity).state.collectAsState()
-                    val current = split
-                    if (current != null) {
-                        com.dzafirov.tvskin.split.SplitStage(current, state.wallpaper, state.time)
-                    } else {
-                        HomeScreen(state, this@MainActivity)
-                    }
+                    HomeScreen(state, this@MainActivity)
                 }
                 LaunchedEffect(Unit) {
                     // Tick only while the home screen is on screen (another app in front: no clock, no fetches).
@@ -105,12 +98,6 @@ class MainActivity : ComponentActivity(), HomeActions {
         super.onNewIntent(intent)
         if (AdminSwitch.handle(this, intent)) {
             soon("Sleep timer can no longer turn the TV off")
-            return
-        }
-        // Home while side by side is on and the key service is off: leave it (both apps stay, full size).
-        val split = com.dzafirov.tvskin.split.SplitHub.peek()
-        if (split?.state?.value != null) {
-            com.dzafirov.tvskin.split.SplitHub.scope.launch { runCatching { split.leave() } }
             return
         }
         // Home pressed (or the launcher opened) while it is already showing: reset to the home row.
@@ -133,14 +120,6 @@ class MainActivity : ComponentActivity(), HomeActions {
         refreshSleep()
         refreshWeather()
         // Reading packages, inputs and usage events is slow on the TV: off the main thread.
-        // Leftover side-by-side windows are closed: a window stays above normal apps and takes their keys.
-        com.dzafirov.tvskin.split.SplitHub.get(this).let { split ->
-            com.dzafirov.tvskin.split.SplitHub.scope.launch {
-                runCatching { split.tidyUp(packageName) }
-                    .onSuccess { if (it.isNotEmpty()) android.util.Log.i("Split", "Closed leftover windows $it") }
-                    .onFailure { android.util.Log.w("Split", "tidyUp failed", it) }
-            }
-        }
         lifecycleScope.launch(Dispatchers.Default) {
             model.loadApps()
             refreshLastApp()
@@ -196,18 +175,6 @@ class MainActivity : ComponentActivity(), HomeActions {
         if (!launcher.open(e)) soon("Couldn't open ${e.label}")
     }
 
-    override fun startSplit(left: AppEntry, right: AppEntry) {
-        val split = com.dzafirov.tvskin.split.SplitHub.get(this)
-        soon("Opening ${left.label} and ${right.label}…")
-        lifecycleScope.launch {
-            val ok = runCatching { split.start(left, right) }.getOrElse { e ->
-                android.util.Log.w("Split", "start failed", e)
-                false
-            }
-            if (ok) com.dzafirov.tvskin.split.SplitHub.watch(split)
-            else soon("Allow TV Skin on the TV (\"Always allow\"), then try again")
-        }
-    }
     override fun setSleep(minutes: Int?) {
         val now = System.currentTimeMillis()
         sleep.set(if (minutes == null) SleepTimer(null) else SleepTimer(null).start(now, minutes))

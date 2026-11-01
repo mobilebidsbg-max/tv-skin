@@ -49,8 +49,6 @@ data class HomeState(
 
 interface HomeActions {
     fun open(e: AppEntry)
-    /** Open [left] and [right] side by side. */
-    fun startSplit(left: AppEntry, right: AppEntry)
     /** Start the sleep timer for [minutes], or switch it off (null). */
     fun setSleep(minutes: Int?)
     /** Hide an app from the row (hold-OK menu). */

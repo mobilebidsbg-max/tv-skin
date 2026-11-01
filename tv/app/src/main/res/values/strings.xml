@@ -5,8 +5,6 @@
     <string name="greeting_afternoon">Good afternoon</string>
     <string name="greeting_evening">Good evening</string>
     <string name="back_to">Back to %1$s</string>
-    <string name="side_by_side">Side by side</string>
-    <string name="side_by_side_sub">Two apps at once</string>
     <string name="sleep">Sleep</string>
     <string name="off">Off</string>
     <string name="minutes_short">%1$d min</string>
@@ -45,12 +43,4 @@
     <string name="sound">Sound</string>
     <string name="adjust">Adjust</string>
     <string name="controls_title">Controls</string>
-    <string name="split_keys_name">TV Skin side by side</string>
-    <string name="split_keys_description">Lets Home open the side-by-side controls while two apps are on screen. It only sees key presses, and only while side by side is on.</string>
-    <string name="split_pick_first">Side by side · first app</string>
-    <string name="split_pick_second">Side by side · next to %1$s</string>
-    <string name="split_swap">Swap</string>
-    <string name="split_full">Full screen</string>
-    <string name="split_end">End</string>
-    <string name="split_hint">Controls</string>
 </resources>

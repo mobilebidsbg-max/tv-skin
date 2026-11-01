@@ -95,20 +95,6 @@ class FocusRestoreTest {
     }
 
     @Test
-    fun `pressing Home again closes the side by side picker`() {
-        show()
-        click("smart:split")
-        click("menu:pick:com.google.android.youtube.tv")
-        compose.onNodeWithTag("menu:pick:com.netflix.ninja").assertExists()
-        state.value = state.value.copy(resetToken = state.value.resetToken + 1)
-        compose.waitForIdle()
-        compose.onNodeWithTag("menu:pick:com.netflix.ninja").assertDoesNotExist()
-        compose.onNodeWithTag("app:com.google.android.youtube.tv").assertIsFocused()
-        click("smart:split")
-        compose.onNodeWithTag("menu:pick:com.google.android.youtube.tv").assertExists() // starts again from the first app
-    }
-
-    @Test
     fun `the first app gets focus when the app list arrives after the screen`() {
         val apps = state.value.apps
         state.value = state.value.copy(apps = emptyList(), tvItems = emptyList())

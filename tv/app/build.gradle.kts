@@ -58,7 +58,6 @@ dependencies {
     implementation(libs.tv.material)
     implementation(libs.coroutines.android)
     implementation(libs.androidx.profileinstaller)
-    implementation(libs.dadb)
 
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)

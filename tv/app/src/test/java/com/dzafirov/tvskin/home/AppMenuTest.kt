@@ -41,7 +41,6 @@ class AppMenuTest {
             state.value = state.value.copy(apps = state.value.apps - e)
         }
         override fun move(e: AppEntry, delta: Int) { calls += "move ${e.id} $delta" }
-        override fun startSplit(left: AppEntry, right: AppEntry) { calls += "split ${left.id} ${right.id}" }
     }
 
     private fun show(rec: Recorder) = compose.setContent {
@@ -67,16 +66,6 @@ class AppMenuTest {
         assertEquals(listOf("hide com.google.android.youtube.tv"), rec.calls)
         compose.onNodeWithTag("menu:open").assertDoesNotExist()
         compose.onNodeWithTag("app:com.netflix.ninja").assertIsFocused()
-    }
-
-    @Test
-    fun `side by side from the menu`() {
-        val rec = Recorder()
-        show(rec)
-        compose.onNodeWithTag(youtube).performSemanticsAction(SemanticsActions.OnLongClick)
-        compose.onNodeWithTag("menu:split").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithTag("menu:pick:com.netflix.ninja").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals(listOf("split com.google.android.youtube.tv com.netflix.ninja"), rec.calls)
     }
 
     @Test
