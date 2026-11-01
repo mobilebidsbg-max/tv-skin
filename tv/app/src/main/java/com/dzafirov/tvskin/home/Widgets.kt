@@ -38,10 +38,10 @@ import com.dzafirov.tvskin.weather.weatherIcon
 
 /** v5 "Today" row. Calendar and Memories wait for their data source; Picture and Sound for the TCL check. */
 @Composable
-fun WidgetsRow(state: HomeState, actions: HomeActions, modifier: Modifier = Modifier) {
+fun WidgetsRow(state: HomeState, actions: HomeActions, onInputs: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.padding(start = Sizes.sideMargin), horizontalArrangement = Arrangement.spacedBy(Sizes.rowGap)) {
         WeatherCard(state)
-        QuickControls(state, actions)
+        QuickControls(state, actions, onInputs)
     }
 }
 
@@ -85,12 +85,12 @@ private fun WeatherCard(state: HomeState) {
 }
 
 @Composable
-private fun QuickControls(state: HomeState, actions: HomeActions) {
+private fun QuickControls(state: HomeState, actions: HomeActions, onInputs: () -> Unit) {
     GlassPanel(state.wallpaper, Modifier.size(Sizes.widgetWidth, Sizes.widgetHeight), radius = Sizes.widgetRadius) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             val sleepValue = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
             QuickTile(R.drawable.ic_moon, stringResource(R.string.sleep_timer), sleepValue, actions::sleep, "widget:sleep", Modifier.weight(1f))
-            QuickTile(R.drawable.ic_input, stringResource(R.string.input), stringResource(R.string.choose), actions::inputs, "widget:input", Modifier.weight(1f))
+            QuickTile(R.drawable.ic_input, stringResource(R.string.input), stringResource(R.string.choose), onInputs, "widget:input", Modifier.weight(1f))
         }
     }
 }

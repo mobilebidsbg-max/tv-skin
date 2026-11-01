@@ -75,8 +75,8 @@ object NoActions : HomeActions {
     override fun open(e: AppEntry) {}
     override fun sideBySide() {}
     override fun sleep() {}
-    override fun hold(e: AppEntry) {}
+    override fun hide(e: AppEntry) {}
+    override fun move(e: AppEntry, delta: Int) {}
     override fun settings() {}
     override fun tab(tab: Tab) {}
-    override fun inputs() {}
 }

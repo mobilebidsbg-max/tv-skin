@@ -30,8 +30,10 @@ interface HomeActions {
     fun open(e: AppEntry)
     fun sideBySide()
     fun sleep()
-    fun hold(e: AppEntry)
+    /** Hide an app from the row (hold-OK menu). */
+    fun hide(e: AppEntry)
+    /** Move an app [delta] places in the row (hold-OK menu, Move). */
+    fun move(e: AppEntry, delta: Int)
     fun settings()
     fun tab(tab: Tab)
-    fun inputs()
 }

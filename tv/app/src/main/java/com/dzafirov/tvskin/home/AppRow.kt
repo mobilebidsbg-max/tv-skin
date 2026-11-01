@@ -46,7 +46,9 @@ fun AppRow(
     apps: List<AppEntry>,
     tvItems: List<AppEntry>,
     actions: HomeActions,
-    firstFocus: FocusRequester,
+    focusFor: (String) -> FocusRequester,
+    movingId: String?,
+    onHold: (AppEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
@@ -54,30 +56,34 @@ fun AppRow(
         contentPadding = PaddingValues(horizontal = Sizes.sideMargin),
         horizontalArrangement = Arrangement.spacedBy(Sizes.rowGap),
     ) {
-        itemsIndexed(apps, key = { _, e -> e.id }) { i, entry ->
-            AppTile(entry, actions, if (i == 0) Modifier.focusRequester(firstFocus) else Modifier)
+        itemsIndexed(apps, key = { _, e -> e.id }) { _, entry ->
+            AppTile(entry, actions, moving = entry.id == movingId, onHold = onHold, modifier = Modifier.focusRequester(focusFor(entry.id)))
         }
         itemsIndexed(tvItems, key = { _, e -> e.id }) { i, entry ->
-            if (i == 0) Spacer(Modifier.width(11.dp))
-            SysTile(entry, actions, if (apps.isEmpty() && i == 0) Modifier.focusRequester(firstFocus) else Modifier)
+            Row {
+                if (i == 0) Spacer(Modifier.width(11.dp))
+                SysTile(entry, actions, Modifier.focusRequester(focusFor(entry.id)))
+            }
         }
     }
 }
 
 @Composable
-private fun AppTile(entry: AppEntry, actions: HomeActions, modifier: Modifier) {
+private fun AppTile(entry: AppEntry, actions: HomeActions, moving: Boolean, onHold: (AppEntry) -> Unit, modifier: Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     Column(Modifier.width(Sizes.tileWidth), horizontalAlignment = Alignment.CenterHorizontally) {
         FocusSurface(
             onClick = { actions.open(entry) },
-            onLongClick = { actions.hold(entry) },
+            onLongClick = { onHold(entry) },
             modifier = modifier.size(Sizes.tileWidth, Sizes.tileHeight).testTag("app:${entry.id}"),
             radius = Sizes.tileRadius,
             focusedScale = Sizes.focusScale,
             container = Color.Black,
             focusedContainer = Color.Black,
             focusedContent = Color.White,
+            edge = if (moving) Color.White else Color.Transparent,
+            focusedEdge = if (moving) Color.White else Color.Transparent,
             interactionSource = interaction,
         ) {
             LocalAppArt.current.Art(entry, Modifier)

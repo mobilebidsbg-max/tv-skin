@@ -7,6 +7,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.dzafirov.tvskin.apps.AppArranger
 import com.dzafirov.tvskin.apps.AppEntry
 import com.dzafirov.tvskin.apps.AppLauncher
 import com.dzafirov.tvskin.apps.AppPrefs
@@ -22,11 +23,14 @@ import java.time.LocalDateTime
 class MainActivity : ComponentActivity(), HomeActions {
     private lateinit var model: HomeModel
     private lateinit var launcher: AppLauncher
+    private lateinit var prefs: AppPrefs
+    private lateinit var repo: AppRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val prefs = AppPrefs(this)
-        model = HomeModel(this, prefs, AppRepository(this))
+        prefs = AppPrefs(this)
+        repo = AppRepository(this)
+        model = HomeModel(this, prefs, repo)
         launcher = AppLauncher(this)
         model.tick()
         // This is the home screen: Back has nowhere to go.
@@ -59,9 +63,16 @@ class MainActivity : ComponentActivity(), HomeActions {
 
     override fun sideBySide() = soon("Two windows come next")
     override fun sleep() = soon("Sleep timer comes next")
-    override fun hold(e: AppEntry) = soon(e.label)
+    override fun hide(e: AppEntry) {
+        prefs.hidden = prefs.hiddenFor(repo.apps().map { it.id }) + e.id
+        model.refreshApps()
+    }
+
+    override fun move(e: AppEntry, delta: Int) {
+        prefs.order = AppArranger.move(model.state.value.apps.map { it.id }, e.id, delta)
+        model.refreshApps()
+    }
     override fun settings() = soon("Settings come next")
-    override fun inputs() = soon("Inputs come next")
     override fun tab(tab: Tab) = when (tab) {
         Tab.HOME -> Unit
         Tab.ASK -> soon("Ask comes later")

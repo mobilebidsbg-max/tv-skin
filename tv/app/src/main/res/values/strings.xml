@@ -22,4 +22,9 @@
     <string name="weather_city">Sofia</string>
     <string name="weather_now">Now</string>
     <string name="avatar_letter">D</string>
+    <string name="menu_open">Open</string>
+    <string name="menu_move">Move</string>
+    <string name="menu_hide">Hide</string>
+    <string name="menu_move_hint">◀ ▶ to move · OK when done</string>
+    <string name="inputs_title">Watch</string>
 </resources>
