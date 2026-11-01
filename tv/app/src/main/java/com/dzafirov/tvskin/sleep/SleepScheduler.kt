@@ -35,11 +35,12 @@ class SleepScheduler(private val context: Context) {
     }
 }
 
-/** The timer ran out: standby, then clear the timer. */
+/** The timer ran out: standby (only if the alarm is on time, see [shouldSleepNow]), then clear the timer. */
 class SleepReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        DeviceAdminStandby(context).now()
-        SleepScheduler(context).set(SleepTimer(null))
+        val scheduler = SleepScheduler(context)
+        if (shouldSleepNow(scheduler.current().endsAtMillis, System.currentTimeMillis())) DeviceAdminStandby(context).now()
+        scheduler.set(SleepTimer(null))
     }
 }
 

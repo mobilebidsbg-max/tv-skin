@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity(), HomeActions {
         repo = AppRepository(this)
         model = HomeModel(this, prefs, repo)
         getSystemService(LauncherApps::class.java)?.registerCallback(packageChanges)
+        // Turning the TV off with the remote cancels a running sleep timer.
+        registerReceiver(screenOff, android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_OFF))
         lastApps = LastAppStore(this)
         sleep = SleepScheduler(this)
         launcher = AppLauncher(this, onLaunched = { lastApps.record(it) })
@@ -103,7 +105,15 @@ class MainActivity : ComponentActivity(), HomeActions {
         override fun onPackagesUnavailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) = changed()
     }
 
+    private val screenOff = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context, intent: android.content.Intent) {
+            sleep.set(SleepTimer(null))
+            refreshSleep()
+        }
+    }
+
     override fun onDestroy() {
+        unregisterReceiver(screenOff)
         getSystemService(LauncherApps::class.java)?.unregisterCallback(packageChanges)
         super.onDestroy()
     }

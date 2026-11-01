@@ -29,4 +29,13 @@ class SleepTimerTest {
         assertEquals(now + 30 * 60_000, SleepTimer(null).start(now, 30).endsAtMillis)
         assertEquals(30, SleepTimer(null).start(now, 30).minutesLeft(now))
     }
+
+    @Test
+    fun `an alarm delivered late does not turn the TV off`() {
+        assertEquals(false, shouldSleepNow(endsAtMillis = now - 5 * 60_000, nowMillis = now))
+        assertEquals(true, shouldSleepNow(endsAtMillis = now - 20_000, nowMillis = now))
+        assertEquals(true, shouldSleepNow(endsAtMillis = now + 2_000, nowMillis = now))
+        assertEquals(false, shouldSleepNow(endsAtMillis = now + 10 * 60_000, nowMillis = now))
+        assertEquals(false, shouldSleepNow(endsAtMillis = null, nowMillis = now))
+    }
 }
