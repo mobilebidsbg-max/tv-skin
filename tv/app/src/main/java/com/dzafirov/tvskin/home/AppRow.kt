@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import com.dzafirov.tvskin.ui.okPress
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -76,7 +77,8 @@ fun AppTile(entry: AppEntry, actions: HomeActions, moving: Boolean, onHold: (App
         FocusSurface(
             onClick = { actions.open(entry) },
             onLongClick = { onHold(entry) },
-            modifier = modifier.size(Sizes.tileWidth, Sizes.tileHeight).testTag("$tagPrefix:${entry.id}"),
+            modifier = modifier.size(Sizes.tileWidth, Sizes.tileHeight).testTag("$tagPrefix:${entry.id}")
+                .okPress(onClick = { actions.open(entry) }, onHold = { onHold(entry) }),
             radius = Sizes.tileRadius,
             focusedScale = Sizes.focusScale,
             container = Color.Black,

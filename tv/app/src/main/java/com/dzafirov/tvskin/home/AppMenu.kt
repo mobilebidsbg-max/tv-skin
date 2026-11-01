@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import com.dzafirov.tvskin.ui.FocusSurface
+import com.dzafirov.tvskin.ui.OK_KEYS
 import com.dzafirov.tvskin.ui.GlassPanel
 import com.dzafirov.tvskin.ui.TvColors
 import com.dzafirov.tvskin.ui.TvType
@@ -46,10 +48,17 @@ data class MenuItem(val tag: String, val label: String, val icon: Int?, val onCl
 fun MenuSheet(title: String, items: List<MenuItem>, wallpaper: Wallpaper, modifier: Modifier = Modifier) {
     val first = remember { FocusRequester() }
     val focusedIndex = remember { mutableIntStateOf(0) }
+    // An OK release whose press happened before the sheet opened (the hold that opened it) must not click.
+    val okDown = remember { mutableStateOf(false) }
     GlassPanel(wallpaper, modifier.width(230.dp), radius = 18.dp) {
         Column(
             Modifier.padding(8.dp).onPreviewKeyEvent { e ->
                 // Keep focus inside the sheet: sideways never leaves, up/down stop at the ends.
+                if (e.key in OK_KEYS) {
+                    if (e.type == KeyEventType.KeyDown) okDown.value = true
+                    if (e.type == KeyEventType.KeyUp) return@onPreviewKeyEvent !okDown.value.also { okDown.value = false }
+                    return@onPreviewKeyEvent false
+                }
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (e.key) {
                     Key.DirectionLeft, Key.DirectionRight -> true

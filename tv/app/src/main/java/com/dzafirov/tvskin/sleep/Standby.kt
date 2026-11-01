@@ -27,3 +27,22 @@ class DeviceAdminStandby(private val context: Context) : Standby {
 }
 
 class AdminReceiver : DeviceAdminReceiver()
+
+/**
+ * The undo for the device admin. Android refuses `dpm remove-active-admin` for this app and won't uninstall an app
+ * whose admin is on, so the app switches its own admin off when started with [EXTRA_REMOVE_ADMIN]:
+ * `adb shell am start -n com.dzafirov.tvskin/.MainActivity --ez remove_admin true`
+ */
+object AdminSwitch {
+    const val EXTRA_REMOVE_ADMIN = "remove_admin"
+
+    /** Returns true when the intent asked for the admin to be removed (and it was). */
+    fun handle(context: Context, intent: android.content.Intent?): Boolean {
+        if (intent?.getBooleanExtra(EXTRA_REMOVE_ADMIN, false) != true) return false
+        val dpm = context.getSystemService(DevicePolicyManager::class.java) ?: return false
+        val admin = ComponentName(context, AdminReceiver::class.java)
+        if (dpm.isAdminActive(admin)) dpm.removeActiveAdmin(admin)
+        Log.i("Standby", "Device admin removed on request")
+        return true
+    }
+}

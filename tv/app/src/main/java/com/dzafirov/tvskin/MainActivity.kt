@@ -23,6 +23,7 @@ import com.dzafirov.tvskin.lastapp.pickLastApp
 import com.dzafirov.tvskin.ui.TvSkinTheme
 import com.dzafirov.tvskin.ui.Wallpaper
 import androidx.lifecycle.lifecycleScope
+import com.dzafirov.tvskin.sleep.AdminSwitch
 import com.dzafirov.tvskin.sleep.SleepScheduler
 import com.dzafirov.tvskin.sleep.SleepTimer
 import com.dzafirov.tvskin.weather.WeatherRepository
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity(), HomeActions {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (AdminSwitch.handle(this, intent)) soon("Sleep timer can no longer turn the TV off")
         prefs = AppPrefs(this)
         repo = AppRepository(this)
         model = HomeModel(this, prefs, repo)
@@ -64,6 +66,11 @@ class MainActivity : ComponentActivity(), HomeActions {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        if (AdminSwitch.handle(this, intent)) soon("Sleep timer can no longer turn the TV off")
     }
 
     override fun onResume() {
