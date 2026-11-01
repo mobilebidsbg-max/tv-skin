@@ -45,4 +45,12 @@
     <string name="sound">Sound</string>
     <string name="adjust">Adjust</string>
     <string name="controls_title">Controls</string>
+    <string name="split_keys_name">TV Skin side by side</string>
+    <string name="split_keys_description">Lets Home open the side-by-side controls while two apps are on screen. It only sees key presses, and only while side by side is on.</string>
+    <string name="split_pick_first">Side by side · first app</string>
+    <string name="split_pick_second">Side by side · next to %1$s</string>
+    <string name="split_swap">Swap</string>
+    <string name="split_full">Full screen</string>
+    <string name="split_end">End</string>
+    <string name="split_hint">Controls</string>
 </resources>

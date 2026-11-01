@@ -41,7 +41,7 @@ class AppMenuTest {
             state.value = state.value.copy(apps = state.value.apps - e)
         }
         override fun move(e: AppEntry, delta: Int) { calls += "move ${e.id} $delta" }
-        override fun sideBySide() { calls += "split" }
+        override fun startSplit(left: AppEntry, right: AppEntry) { calls += "split ${left.id} ${right.id}" }
     }
 
     private fun show(rec: Recorder) = compose.setContent {
@@ -75,7 +75,8 @@ class AppMenuTest {
         show(rec)
         compose.onNodeWithTag(youtube).performSemanticsAction(SemanticsActions.OnLongClick)
         compose.onNodeWithTag("menu:split").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals(listOf("split"), rec.calls)
+        compose.onNodeWithTag("menu:pick:com.netflix.ninja").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("split com.google.android.youtube.tv com.netflix.ninja"), rec.calls)
     }
 
     @Test

@@ -69,6 +69,9 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     var menuFor by remember { mutableStateOf<AppEntry?>(null) }
     var inputsOpen by remember { mutableStateOf(false) }
     var sleepOpen by remember { mutableStateOf(false) }
+    // Side by side picker: null = closed; firstPick = the app already chosen for the left side.
+    var pickOpen by remember { mutableStateOf(false) }
+    var firstPick by remember { mutableStateOf<AppEntry?>(null) }
     // The control that opened the sleep or input sheet; focus returns there when the sheet closes.
     var sheetOpener by remember { mutableStateOf<String?>(null) }
     var movingId by remember { mutableStateOf<String?>(null) }
@@ -86,6 +89,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     }
     BackHandler(enabled = page != Tab.HOME && menuFor == null && movingId == null) { onTab(Tab.HOME) }
 
+    BackHandler(enabled = pickOpen) { pickOpen = false; firstPick = null; pendingFocus = "smart:split" }
     BackHandler(enabled = menuFor != null || inputsOpen || sleepOpen) {
         pendingFocus = menuFor?.id ?: sheetOpener
         menuFor = null
@@ -138,7 +142,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             )
         } else Box(Modifier.fillMaxSize().offset { IntOffset(0, scroll.roundToPx()) }) {
 
-            Hero(state, actions, onSleep = { sleepOpen = true; sheetOpener = "smart:sleep" }, focusFor = ::focusFor, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
+            Hero(state, actions, onSplit = { firstPick = null; pickOpen = true }, onSleep = { sleepOpen = true; sheetOpener = "smart:sleep" }, focusFor = ::focusFor, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
             if (movingId != null) {
                 Text(stringResource(R.string.menu_move_hint), style = TvType.label, color = Color.White, modifier = Modifier.offset(62.dp, Sizes.appsTop - 18.dp))
             }
@@ -169,13 +173,32 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             modifier = Modifier.padding(horizontal = 48.dp).offset(y = Sizes.topBarTop).section(Section.UPPER),
         )
 
-        if (menuFor != null || inputsOpen || sleepOpen) {
+        if (pickOpen) {
+            val first = firstPick
+            MenuSheet(
+                title = if (first == null) stringResource(R.string.split_pick_first) else stringResource(R.string.split_pick_second, first.label),
+                items = state.apps.filter { it != first }.map { app ->
+                    MenuItem("menu:pick:${app.id}", app.label, null) {
+                        if (first == null) firstPick = app else {
+                            pickOpen = false
+                            firstPick = null
+                            actions.startSplit(first, app)
+                        }
+                    }
+                },
+                wallpaper = state.wallpaper,
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = Sizes.sideMargin),
+                key = first?.id,
+            )
+        }
+        if (menuFor != null || inputsOpen || sleepOpen || pickOpen) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)))
         }
         menuFor?.let { entry ->
             MenuSheet(
                 title = entry.label,
                 items = appMenuItems(entry, state, actions,
+                    onSplitWith = { firstPick = it; pickOpen = true },
                     close = { focusId -> menuFor = null; pendingFocus = focusId },
                     startMove = { movingId = entry.id; menuFor = null; pendingFocus = entry.id },
                 ),
@@ -243,6 +266,7 @@ private fun appMenuItems(
     entry: AppEntry,
     state: HomeState,
     actions: HomeActions,
+    onSplitWith: (AppEntry) -> Unit,
     close: (focusId: String?) -> Unit,
     startMove: () -> Unit,
 ): List<MenuItem> {
@@ -251,7 +275,7 @@ private fun appMenuItems(
     val neighbour = apps.getOrNull(index + 1) ?: apps.getOrNull(index - 1) ?: state.tvItems.firstOrNull()
     return listOf(
         MenuItem("menu:open", stringResource(R.string.menu_open), R.drawable.ic_open) { close(entry.id); actions.open(entry) },
-        MenuItem("menu:split", stringResource(R.string.side_by_side), R.drawable.ic_split) { close(entry.id); actions.sideBySide() },
+        MenuItem("menu:split", stringResource(R.string.side_by_side), R.drawable.ic_split) { close(entry.id); onSplitWith(entry) },
         MenuItem("menu:move", stringResource(R.string.menu_move), R.drawable.ic_move) { startMove() },
         if (entry in state.hiddenApps) {
             MenuItem("menu:show", stringResource(R.string.menu_show), R.drawable.ic_open) { close(entry.id); actions.unhide(entry) }

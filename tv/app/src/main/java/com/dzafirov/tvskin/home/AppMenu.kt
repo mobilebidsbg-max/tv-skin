@@ -45,7 +45,7 @@ data class MenuItem(val tag: String, val label: String, val icon: Int?, val onCl
  * the sheet; Back closes it (handled by the caller).
  */
 @Composable
-fun MenuSheet(title: String, items: List<MenuItem>, wallpaper: Wallpaper, modifier: Modifier = Modifier) {
+fun MenuSheet(title: String, items: List<MenuItem>, wallpaper: Wallpaper, modifier: Modifier = Modifier, key: Any? = null) {
     val first = remember { FocusRequester() }
     val focusedIndex = remember { mutableIntStateOf(0) }
     // An OK release whose press happened before the sheet opened (the hold that opened it) must not click.
@@ -92,7 +92,7 @@ fun MenuSheet(title: String, items: List<MenuItem>, wallpaper: Wallpaper, modifi
             }
         }
     }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(key) {
         withFrameNanos { }
         runCatching { first.requestFocus() }
     }
