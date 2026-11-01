@@ -85,7 +85,7 @@ fun AppTile(entry: AppEntry, actions: HomeActions, moving: Boolean, onHold: (App
             focusedContainer = Color.Black,
             focusedContent = Color.White,
             edge = if (moving) Color.White else Color.Transparent,
-            focusedEdge = if (moving) Color.White else Color.Transparent,
+            focusedEdge = if (moving) Color.White else Color.White.copy(alpha = 0.85f),
             interactionSource = interaction,
         ) {
             LocalAppArt.current.Art(entry, Modifier)

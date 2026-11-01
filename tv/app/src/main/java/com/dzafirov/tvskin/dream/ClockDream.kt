@@ -66,14 +66,14 @@ class ClockDream : DreamService(), LifecycleOwner, SavedStateRegistryOwner, View
                             delay(60_000L - now.second * 1000L)
                         }
                     }
-                    SaverFace(
+                    androidx.compose.runtime.CompositionLocalProvider(com.dzafirov.tvskin.ui.LocalUhdWallpaper provides true) { SaverFace(
                         wallpaper = wallpaper,
                         time = now.format(TIME),
                         dateLine = now.format(DATE),
                         weather = weather,
                         night = isNight(now.hour),
                         offset = driftOffset(now.hour * 60 + now.minute),
-                    )
+                    ) }
                 }
             }
         }

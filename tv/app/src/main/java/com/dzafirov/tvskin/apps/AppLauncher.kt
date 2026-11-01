@@ -27,6 +27,9 @@ class AppLauncher(private val context: Context, private val onLaunched: (String)
         } catch (e: ActivityNotFoundException) {
             Log.w(TAG, "Could not open ${entry.id}", e)
             false
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Not allowed to open ${entry.id}", e)
+            false
         }
     }
 

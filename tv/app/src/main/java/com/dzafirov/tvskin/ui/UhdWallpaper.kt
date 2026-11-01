@@ -35,17 +35,27 @@ val LocalUhdWallpaper = staticCompositionLocalOf { false }
 object UhdPlate {
     const val W = 3840
     const val H = 2160
-    private var cached: Pair<Wallpaper, Bitmap>? = null
+    private var cached: Pair<String, Bitmap>? = null
 
+    /** [glass] = the home screen's plate; without it, the wallpaper with a soft dark bottom (the screensaver). */
     @Synchronized
-    fun get(context: Context, wallpaper: Wallpaper): Bitmap {
-        cached?.let { (w, bmp) -> if (w == wallpaper) return bmp else bmp.recycle() }
+    fun get(context: Context, wallpaper: Wallpaper, glass: Boolean = true): Bitmap {
+        val key = "$wallpaper:$glass"
+        cached?.let { (k, bmp) -> if (k == key) return bmp else bmp.recycle() }
         val plate = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(plate)
         val paint = Paint(Paint.FILTER_BITMAP_FLAG)
         BitmapFactory.decodeResource(context.resources, wallpaper.uhd, BitmapFactory.Options().apply { inScaled = false }).also {
             canvas.drawBitmap(it, null, Rect(0, 0, W, H), paint)
             it.recycle()
+        }
+        if (!glass) {
+            // Screensaver: a soft dark gradient over the bottom third, behind the corner clock and weather.
+            canvas.drawRect(0f, H * 0.66f, W.toFloat(), H.toFloat(), Paint().apply {
+                shader = LinearGradient(0f, H * 0.66f, 0f, H.toFloat(), 0x00000000, 0x61000000, Shader.TileMode.CLAMP)
+            })
+            cached = key to plate
+            return plate
         }
         // Top scrim (v5): black .28 fading out over the top 14%.
         canvas.drawRect(0f, 0f, W.toFloat(), H * 0.14f, Paint().apply {
@@ -57,13 +67,13 @@ object UhdPlate {
         val frostRegion = Rect(0, 290, 1340, 670)
         val frost = GlassBaker.patch(context, wallpaper, 1920, 1080, frostRegion, featherPx = 180, darken = 0.15f)
         canvas.drawBitmap(frost, null, Rect(0, 290 * 2, 1340 * 2, 670 * 2), paint)
-        cached = wallpaper to plate
+        cached = key to plate
         return plate
     }
 }
 
 @Composable
-fun UhdWallpaperSurface(wallpaper: Wallpaper, modifier: Modifier = Modifier) {
+fun UhdWallpaperSurface(wallpaper: Wallpaper, modifier: Modifier = Modifier, glass: Boolean = true) {
     val context = LocalContext.current
     val holderRef = remember { arrayOfNulls<SurfaceHolder>(1) }
     val plateRef = remember { arrayOfNulls<Bitmap>(1) }
@@ -78,7 +88,7 @@ fun UhdWallpaperSurface(wallpaper: Wallpaper, modifier: Modifier = Modifier) {
         }
     }
     LaunchedEffect(wallpaper) {
-        plateRef[0] = withContext(Dispatchers.Default) { UhdPlate.get(context, wallpaper) }
+        plateRef[0] = withContext(Dispatchers.Default) { UhdPlate.get(context, wallpaper, glass) }
         draw()
     }
     AndroidView(

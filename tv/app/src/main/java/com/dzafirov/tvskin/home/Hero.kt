@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -76,7 +77,7 @@ private fun SmartButton(title: String, subtitle: String?, onClick: () -> Unit, t
         ) {
             leading()
             Column {
-                Text(title, style = TvType.button, maxLines = 1)
+                Text(title, style = TvType.button, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 170.dp))
                 subtitle?.let { Text(it, style = TvType.buttonSub, maxLines = 1, color = LocalContentColor.current.copy(alpha = 0.7f)) }
             }
         }

@@ -22,6 +22,7 @@ import com.dzafirov.tvskin.lastapp.pickLastApp
 import com.dzafirov.tvskin.ui.TvSkinTheme
 import com.dzafirov.tvskin.ui.Wallpaper
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.dzafirov.tvskin.sleep.AdminSwitch
 import com.dzafirov.tvskin.sleep.SleepScheduler
 import com.dzafirov.tvskin.sleep.SleepTimer
@@ -68,12 +69,13 @@ class MainActivity : ComponentActivity(), HomeActions {
                     HomeScreen(state, this)
                 }
                 LaunchedEffect(Unit) {
-                    while (true) {
+                    // Tick only while the home screen is on screen (another app in front: no clock, no fetches).
+                    lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) { while (true) {
                         model.tick()
                         refreshSleep()
                         if (LocalDateTime.now().minute % 30 == 0) refreshWeather()
                         delay(60_000L - (LocalDateTime.now().second * 1000L))
-                    }
+                    } }
                 }
             }
         }

@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.dzafirov.tvskin.ui.Inter
 import com.dzafirov.tvskin.ui.Wallpaper
+import com.dzafirov.tvskin.ui.LocalUhdWallpaper
+import com.dzafirov.tvskin.ui.UhdWallpaperSurface
 import com.dzafirov.tvskin.ui.WallpaperImage
 import com.dzafirov.tvskin.weather.WeatherNow
 import com.dzafirov.tvskin.weather.weatherIcon
@@ -41,8 +43,12 @@ private val small = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium
 @Composable
 fun SaverFace(wallpaper: Wallpaper, time: String, dateLine: String, weather: WeatherNow?, night: Boolean, offset: Pair<Int, Int>) {
     Box(Modifier.fillMaxSize()) {
-        WallpaperImage(wallpaper)
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.66f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.38f))))
+        if (LocalUhdWallpaper.current) {
+            UhdWallpaperSurface(wallpaper, glass = false)
+        } else {
+            WallpaperImage(wallpaper)
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.66f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.38f))))
+        }
         val drift = Modifier.offset(offset.first.dp, offset.second.dp)
         Column(Modifier.align(Alignment.BottomStart).padding(start = 55.dp, bottom = 42.dp).then(drift)) {
             Text(time, style = big)
