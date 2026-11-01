@@ -7,12 +7,18 @@ import android.media.tv.TvInputInfo
 import android.media.tv.TvInputManager
 import com.dzafirov.tvskin.apps.AppEntry.Kind
 
+/** What is installed on the TV. Reading it is slow on the TV: do it off the main thread and keep the result. */
+interface InstalledApps {
+    fun apps(): List<AppEntry>
+    fun tvItems(): List<AppEntry>
+}
+
 /** Reads what is installed on the TV. */
-class AppRepository(private val context: Context) {
+class AppRepository(private val context: Context) : InstalledApps {
     private val pm: PackageManager = context.packageManager
 
     /** Every app with a TV launcher entry, minus this launcher and Live TV (Live TV is a TV item). */
-    fun apps(): List<AppEntry> {
+    override fun apps(): List<AppEntry> {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
         return pm.queryIntentActivities(intent, 0)
             .map { it.activityInfo }
@@ -22,7 +28,7 @@ class AppRepository(private val context: Context) {
     }
 
     /** Live TV, the HDMI inputs, then the TV's own Settings. */
-    fun tvItems(): List<AppEntry> {
+    override fun tvItems(): List<AppEntry> {
         val items = mutableListOf<AppEntry>()
         if (pm.getLaunchIntentForPackage(AppArranger.LIVE_TV_PACKAGE) != null ||
             pm.getLeanbackLaunchIntentForPackage(AppArranger.LIVE_TV_PACKAGE) != null

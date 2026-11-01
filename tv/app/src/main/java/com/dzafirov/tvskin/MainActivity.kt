@@ -7,7 +7,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import com.dzafirov.tvskin.apps.AppArranger
 import com.dzafirov.tvskin.apps.AppEntry
 import com.dzafirov.tvskin.apps.AppLauncher
 import com.dzafirov.tvskin.apps.AppPrefs
@@ -29,6 +28,9 @@ import com.dzafirov.tvskin.sleep.SleepTimer
 import com.dzafirov.tvskin.weather.WeatherRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import android.content.pm.LauncherApps
+import android.os.UserHandle
 import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity(), HomeActions {
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity(), HomeActions {
         prefs = AppPrefs(this)
         repo = AppRepository(this)
         model = HomeModel(this, prefs, repo)
+        getSystemService(LauncherApps::class.java)?.registerCallback(packageChanges)
         lastApps = LastAppStore(this)
         sleep = SleepScheduler(this)
         launcher = AppLauncher(this, onLaunched = { lastApps.record(it) })
@@ -80,11 +83,29 @@ class MainActivity : ComponentActivity(), HomeActions {
 
     override fun onResume() {
         super.onResume()
-        model.refreshApps()
         model.tick()
-        refreshLastApp()
-        refreshWeather()
         refreshSleep()
+        refreshWeather()
+        // Reading packages, inputs and usage events is slow on the TV: off the main thread.
+        lifecycleScope.launch(Dispatchers.Default) {
+            model.refreshApps()
+            refreshLastApp()
+        }
+    }
+
+    /** Apps installed, removed or updated while the launcher runs: re-read them in the background. */
+    private val packageChanges = object : LauncherApps.Callback() {
+        private fun changed() { lifecycleScope.launch(Dispatchers.Default) { model.refreshApps() } }
+        override fun onPackageRemoved(packageName: String, user: UserHandle) = changed()
+        override fun onPackageAdded(packageName: String, user: UserHandle) = changed()
+        override fun onPackageChanged(packageName: String, user: UserHandle) = changed()
+        override fun onPackagesAvailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) = changed()
+        override fun onPackagesUnavailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) = changed()
+    }
+
+    override fun onDestroy() {
+        getSystemService(LauncherApps::class.java)?.unregisterCallback(packageChanges)
+        super.onDestroy()
     }
 
     /** Weather in the top bar and the Today card; on failure the old values (or none) stay. */
@@ -97,7 +118,7 @@ class MainActivity : ComponentActivity(), HomeActions {
 
     /** "Back to <app>": the newest app opened from here or (with usage access) anywhere. */
     private fun refreshLastApp() {
-        val installed = repo.apps()
+        val installed = model.installed
         val recent = lastApps.recent()
         val pkg = pickLastApp(recent.map { it.first }, packageName, IGNORED_PACKAGES, installed.map { it.id }.toSet())
         val entry = installed.firstOrNull { it.id == pkg }
@@ -122,29 +143,11 @@ class MainActivity : ComponentActivity(), HomeActions {
         val left = sleep.current().minutesLeft(System.currentTimeMillis())
         model.update { it.copy(sleepLeftMinutes = left) }
     }
-    override fun hide(e: AppEntry) {
-        prefs.hidden = prefs.hiddenFor(repo.apps().map { it.id }) + e.id
-        model.refreshApps()
-    }
-
-    override fun move(e: AppEntry, delta: Int) {
-        prefs.order = AppArranger.move(model.state.value.apps.map { it.id }, e.id, delta)
-        model.refreshApps()
-    }
-    override fun unhide(e: AppEntry) {
-        prefs.hidden = prefs.hiddenFor(repo.apps().map { it.id }) - e.id
-        model.refreshApps()
-    }
-
-    override fun setWallpaper(w: Wallpaper) {
-        prefs.wallpaper = w
-        model.refreshApps()
-    }
-
-    override fun setSleepDefault(minutes: Int) {
-        prefs.sleepDefaultMinutes = minutes
-        model.refreshApps()
-    }
+    override fun hide(e: AppEntry) = model.hide(e)
+    override fun move(e: AppEntry, delta: Int) = model.move(e, delta)
+    override fun unhide(e: AppEntry) = model.unhide(e)
+    override fun setWallpaper(w: Wallpaper) = model.setWallpaper(w)
+    override fun setSleepDefault(minutes: Int) = model.setSleepDefault(minutes)
     override fun tab(tab: Tab) = when (tab) {
         Tab.HOME -> Unit
         Tab.ASK -> soon("Ask comes later")
