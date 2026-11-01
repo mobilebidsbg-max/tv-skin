@@ -143,10 +143,45 @@ class SplitControllerTest {
         assertEquals(
             listOf(
                 "settings get secure enabled_accessibility_services",
+                "settings get secure accessibility_enabled",
                 "settings put secure enabled_accessibility_services a.b/a.b.Keys",
                 "settings put secure accessibility_enabled 1",
             ),
-            shell.log.take(3),
+            shell.log.take(4),
         )
+    }
+
+    @Test
+    fun `start switches accessibility back on when the service is listed but the switch is off`() = runBlocking {
+        val tv = object : Shell {
+            val log = mutableListOf<String>()
+            override suspend fun run(cmd: String): String {
+                log += cmd
+                return when (cmd) {
+                    "settings get secure enabled_accessibility_services" -> "a.b/a.b.Keys"
+                    "settings get secure accessibility_enabled" -> "0"
+                    else -> shell.run(cmd)
+                }
+            }
+        }
+        SplitController(tv, componentOf = ::comp, pause = { shell.settle() }, keyService = "a.b/a.b.Keys").start(yt, web)
+        assertTrue("settings put secure accessibility_enabled 1" in tv.log)
+    }
+
+    @Test
+    fun `left-over small windows from a session that was cut off are made full size`() = runBlocking {
+        shell.tasks[yt.id] = 200
+        shell.bounds[200] = PxRect(48, 196, 948, 702)
+        shell.tasks["com.dzafirov.tvskin"] = 201
+        shell.bounds[201] = FULL_SCREEN
+        c.tidyUp(ownPackage = "com.dzafirov.tvskin")
+        assertEquals(listOf(SplitCommands.resize(200, FULL_SCREEN)), actions())
+    }
+
+    @Test
+    fun `no tidying while side by side is on`() = runBlocking {
+        c.start(yt, web); shell.log.clear()
+        c.tidyUp(ownPackage = "com.dzafirov.tvskin")
+        assertTrue(shell.log.isEmpty())
     }
 }

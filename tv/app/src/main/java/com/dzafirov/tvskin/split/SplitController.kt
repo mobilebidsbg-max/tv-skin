@@ -95,6 +95,21 @@ class SplitController(
         _state.value = null
     }
 
+    /**
+     * When side by side is off: any app window that is still small (the launcher was restarted mid-session, e.g.
+     * after an update) is made full size, so apps never open in a leftover window.
+     */
+    suspend fun tidyUp(ownPackage: String) {
+        if (_state.value != null) return
+        val list = shell.run(SplitCommands.LIST)
+        Regex("""taskId=(\d+): ([\w.]+)/""").findAll(list).forEach { m ->
+            val id = m.groupValues[1].toInt()
+            if (m.groupValues[2] == ownPackage) return@forEach
+            val b = boundsFor(id, list) ?: return@forEach
+            if (b != FULL_SCREEN) shell.run(SplitCommands.resize(id, FULL_SCREEN))
+        }
+    }
+
     fun openBar() { _state.value = _state.value?.openBar() }
     fun closeBar() { _state.value = _state.value?.closeBar() }
     fun moveBar(delta: Int) { _state.value = _state.value?.moveBar(delta) }
@@ -134,8 +149,11 @@ class SplitController(
 
     private fun id(app: AppEntry) = taskIds[app.id]
 
+    /** An app update clears the service from the list or turns the main switch off (both seen on the TV). */
     private suspend fun ensureKeyService(service: String) {
-        if (service in shell.run("settings get secure enabled_accessibility_services")) return
+        val listed = service in shell.run("settings get secure enabled_accessibility_services")
+        val on = shell.run("settings get secure accessibility_enabled").trim() == "1"
+        if (listed && on) return
         shell.run("settings put secure enabled_accessibility_services $service")
         shell.run("settings put secure accessibility_enabled 1")
     }

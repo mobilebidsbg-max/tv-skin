@@ -240,6 +240,15 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         }
     }
 
+    // The app list arrives a moment after the screen (it is read in the background): focus the first app then.
+    var focusedOnce by remember { mutableStateOf(false) }
+    LaunchedEffect(state.apps.isNotEmpty() || state.tvItems.isNotEmpty()) {
+        if (focusedOnce) return@LaunchedEffect
+        val first = state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id ?: return@LaunchedEffect
+        focusedOnce = true
+        if (pendingFocus == null) pendingFocus = first
+    }
+
     // Home pressed again while this screen is open: back to the home row with everything closed.
     LaunchedEffect(state.resetToken) {
         if (state.resetToken == 0) return@LaunchedEffect
@@ -247,6 +256,8 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         menuFor = null
         inputsOpen = false
         sleepOpen = false
+        pickOpen = false
+        firstPick = null
         movingId = null
         section = Section.UPPER
         pendingFocus = state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id

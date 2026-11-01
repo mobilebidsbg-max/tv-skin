@@ -133,6 +133,10 @@ class MainActivity : ComponentActivity(), HomeActions {
         refreshSleep()
         refreshWeather()
         // Reading packages, inputs and usage events is slow on the TV: off the main thread.
+        // Leftover small windows from a side-by-side session that was cut off go back to full size.
+        com.dzafirov.tvskin.split.SplitHub.get(this).let { split ->
+            com.dzafirov.tvskin.split.SplitHub.scope.launch { runCatching { split.tidyUp(packageName) } }
+        }
         lifecycleScope.launch(Dispatchers.Default) {
             model.loadApps()
             refreshLastApp()
