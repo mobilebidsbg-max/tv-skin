@@ -4,6 +4,7 @@ package com.dzafirov.tvskin.apps
 object AppArranger {
     /** Dimitar's apps first, as installed on the TV on 2026-11-01. */
     val DEFAULT_ORDER: List<String> = listOf(
+        XPLORE_PACKAGE, // A1 Xplore TV, his TV service (Dimitar, 2026-11-01)
         "com.google.android.youtube.tv",
         "com.netflix.ninja",
         "com.wbd.stream",
@@ -18,13 +19,13 @@ object AppArranger {
     /** Hidden until Dimitar unhides them: TCL extras (except Live TV) and preinstalled apps he doesn't use. */
     val DEFAULT_HIDDEN: Set<String> = setOf(
         "com.iqiyi.i18n.tv",
-        "xploretv.android.tv",
         "com.google.android.play.games",
         "com.android.tv.settings", // the TV's Settings is a TV item at the end of the row instead
     )
 
     private const val TCL_PREFIX = "com.tcl."
     const val LIVE_TV_PACKAGE = "com.tcl.tv"
+    const val XPLORE_PACKAGE = "xploretv.android.tv"
 
     fun isHiddenByDefault(id: String): Boolean =
         id in DEFAULT_HIDDEN || (id.startsWith(TCL_PREFIX) && id != LIVE_TV_PACKAGE)

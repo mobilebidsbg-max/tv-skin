@@ -132,7 +132,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         } else if (page == Tab.APPS) {
             BakedBand(state.wallpaper, top = 40.dp)
             AppsPage(
-                state.apps, actions, ::focusFor, movingId,
+                state.allApps.ifEmpty { state.apps }, actions, ::focusFor, movingId,
                 onHold = { menuFor = it },
                 modifier = Modifier.fillMaxSize().padding(top = 70.dp),
             )
@@ -248,7 +248,11 @@ private fun appMenuItems(
         MenuItem("menu:open", stringResource(R.string.menu_open), R.drawable.ic_open) { close(entry.id); actions.open(entry) },
         MenuItem("menu:split", stringResource(R.string.side_by_side), R.drawable.ic_split) { close(entry.id); actions.sideBySide() },
         MenuItem("menu:move", stringResource(R.string.menu_move), R.drawable.ic_move) { startMove() },
-        MenuItem("menu:hide", stringResource(R.string.menu_hide), R.drawable.ic_hide) { close(neighbour?.id); actions.hide(entry) },
+        if (entry in state.hiddenApps) {
+            MenuItem("menu:show", stringResource(R.string.menu_show), R.drawable.ic_open) { close(entry.id); actions.unhide(entry) }
+        } else {
+            MenuItem("menu:hide", stringResource(R.string.menu_hide), R.drawable.ic_hide) { close(neighbour?.id); actions.hide(entry) }
+        },
     )
 }
 

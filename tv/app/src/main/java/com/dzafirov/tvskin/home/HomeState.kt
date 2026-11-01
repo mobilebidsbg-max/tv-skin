@@ -25,6 +25,8 @@ data class HomeState(
     val tvItems: List<AppEntry>,
     val promos: List<AppEntry>,
     val hiddenApps: List<AppEntry> = emptyList(),
+    /** Every installed app for the Apps tab: his order first, hidden ones included. */
+    val allApps: List<AppEntry> = emptyList(),
     val sleepDefaultMinutes: Int = 60,
     val version: String = "",
     /** Bumped when Home is pressed while this screen is already open: back to the home row, menus closed. */

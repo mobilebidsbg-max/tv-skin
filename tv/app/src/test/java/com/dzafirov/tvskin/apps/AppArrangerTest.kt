@@ -38,7 +38,6 @@ class AppArrangerTest {
         assertTrue(AppArranger.isHiddenByDefault("com.tcl.dashboard"))
         assertTrue(AppArranger.isHiddenByDefault("com.tcl.waterfall.overseas"))
         assertTrue(AppArranger.isHiddenByDefault("com.iqiyi.i18n.tv"))
-        assertTrue(AppArranger.isHiddenByDefault("xploretv.android.tv"))
         assertTrue(AppArranger.isHiddenByDefault("com.android.tv.settings"))
         assertFalse(AppArranger.isHiddenByDefault("com.tcl.tv"))
         assertFalse(AppArranger.isHiddenByDefault("com.google.android.youtube.tv"))
@@ -57,7 +56,15 @@ class AppArrangerTest {
     }
 
     @Test
-    fun `default order starts with YouTube, Netflix and HBO Max`() {
-        assertEquals(listOf("com.google.android.youtube.tv", "com.netflix.ninja", "com.wbd.stream"), AppArranger.DEFAULT_ORDER.take(3))
+    fun `default order starts with A1 Xplore, then YouTube, Netflix and HBO Max`() {
+        assertEquals(
+            listOf("xploretv.android.tv", "com.google.android.youtube.tv", "com.netflix.ninja", "com.wbd.stream"),
+            AppArranger.DEFAULT_ORDER.take(4),
+        )
+    }
+
+    @Test
+    fun `A1 Xplore is shown by default`() {
+        assertFalse(AppArranger.isHiddenByDefault("xploretv.android.tv"))
     }
 }

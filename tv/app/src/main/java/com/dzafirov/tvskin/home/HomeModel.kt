@@ -43,6 +43,7 @@ class HomeModel(private val context: Context, private val prefs: AppPrefs, priva
             hiddenApps = installed.filter { it.id in hidden }.sortedBy { it.label.lowercase() },
             sleepDefaultMinutes = prefs.sleepDefaultMinutes,
             apps = AppArranger.arrange(installed, prefs.order, hidden),
+            allApps = AppArranger.arrange(installed, prefs.order, emptySet()),
             promos = PROMO_PACKAGES.mapNotNull { pkg -> installed.firstOrNull { it.id == pkg } },
         )
     }

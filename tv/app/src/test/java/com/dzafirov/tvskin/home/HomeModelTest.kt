@@ -46,4 +46,22 @@ class HomeModelTest {
         assertTrue(yt in model.state.value.apps)
         assertEquals(1, installed.reads)
     }
+
+    @Test
+    fun `the Apps tab lists every app, hidden ones too`() {
+        val installed = CountingApps(listOf(yt, nf, hbo))
+        val model = HomeModel(context, AppPrefs(context), installed)
+        model.refreshApps()
+        model.hide(yt)
+        assertEquals(setOf(yt, nf, hbo), model.state.value.allApps.toSet())
+        assertEquals(listOf(nf, hbo), model.state.value.apps)
+    }
+
+    @Test
+    fun `A1 Xplore hidden by an older version is shown once`() {
+        val old = AppPrefs(context)
+        old.hidden = setOf("xploretv.android.tv", "com.iqiyi.i18n.tv")
+        context.getSharedPreferences("tvskin", Context.MODE_PRIVATE).edit().remove("a1_shown").commit()
+        assertEquals(setOf("com.iqiyi.i18n.tv"), AppPrefs(context).hidden)
+    }
 }

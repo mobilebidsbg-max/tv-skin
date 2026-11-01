@@ -7,6 +7,14 @@ import com.dzafirov.tvskin.ui.Wallpaper
 class AppPrefs(context: Context) {
     private val prefs = context.getSharedPreferences("tvskin", Context.MODE_PRIVATE)
 
+    init {
+        // Versions before 2026-11-01 hid A1 Xplore by default; Dimitar wants it shown. Unhide it once.
+        if (!prefs.getBoolean(KEY_A1_SHOWN, false)) {
+            hidden?.let { if (AppArranger.XPLORE_PACKAGE in it) hidden = it - AppArranger.XPLORE_PACKAGE }
+            prefs.edit().putBoolean(KEY_A1_SHOWN, true).apply()
+        }
+    }
+
     /** App order; [AppArranger.DEFAULT_ORDER] until he moves something. */
     var order: List<String>
         get() = prefs.getString(KEY_ORDER, null)?.split(SEP)?.filter { it.isNotEmpty() } ?: AppArranger.DEFAULT_ORDER
@@ -35,5 +43,6 @@ class AppPrefs(context: Context) {
         const val KEY_HIDDEN = "hidden"
         const val KEY_WALLPAPER = "wallpaper"
         const val KEY_SLEEP_DEFAULT = "sleep_default_minutes"
+        const val KEY_A1_SHOWN = "a1_shown"
     }
 }
