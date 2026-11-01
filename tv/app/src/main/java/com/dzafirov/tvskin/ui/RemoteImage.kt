@@ -5,22 +5,16 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 
 /** Artwork from the web, decoded no wider than [maxWidthPx] and kept in a small (8 MB) cache. Nothing on failure. */
 @Composable
 fun RemoteImage(url: String, modifier: Modifier, maxWidthPx: Int = 480) {
-    val bitmap by produceState(RemoteImages.cache.get(url), url) {
-        if (value == null) value = withContext(Dispatchers.IO) { RemoteImages.load(url, maxWidthPx) }
-    }
+    val bitmap = rememberLoaded(url, cached = { RemoteImages.cache.get(it) }) { RemoteImages.load(it, maxWidthPx) }
     bitmap?.let { Image(it.asImageBitmap(), null, modifier, contentScale = ContentScale.Crop) }
 }
 

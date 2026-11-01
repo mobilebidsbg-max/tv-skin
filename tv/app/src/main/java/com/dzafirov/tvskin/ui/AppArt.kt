@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -51,9 +53,7 @@ object PackageAppArt : AppArt {
     @Composable
     override fun Art(entry: AppEntry, modifier: Modifier) {
         val context = LocalContext.current
-        val loaded by produceState(cache.get(entry.id), entry.id) {
-            if (value == null) value = withContext(Dispatchers.IO) { load(context, entry).also { cache.put(entry.id, it) } }
-        }
+        val loaded = rememberLoaded(entry.id, cached = { cache.get(it) }) { load(context, entry).also { a -> cache.put(entry.id, a) } }
         when (val art = loaded) {
             is Loaded.Banner -> Image(art.bitmap.asImageBitmap(), null, modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             is Loaded.Icon -> Box(modifier.fillMaxSize().background(TvColors.DarkGlass)) {
@@ -85,4 +85,17 @@ object PackageAppArt : AppArt {
 fun fitWithin(w: Int, h: Int, maxW: Int, maxH: Int): Pair<Int, Int> {
     val scale = minOf(1f, maxW.toFloat() / w, maxH.toFloat() / h)
     return maxOf(1, Math.round(w * scale)) to maxOf(1, Math.round(h * scale))
+}
+
+/**
+ * A value loaded off the main thread for [key]: the cached one at once, else loaded. When [key] changes, the old
+ * value is dropped (produceState kept it, so "Back to YouTube" showed Prime Video's logo).
+ */
+@Composable
+fun <K, V : Any> rememberLoaded(key: K, cached: (K) -> V?, load: suspend (K) -> V?): V? {
+    val state = remember(key) { mutableStateOf(cached(key)) }
+    LaunchedEffect(key) {
+        if (state.value == null) state.value = withContext(Dispatchers.IO) { load(key) }
+    }
+    return state.value
 }
