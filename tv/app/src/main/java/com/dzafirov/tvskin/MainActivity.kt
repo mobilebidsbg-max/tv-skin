@@ -21,7 +21,10 @@ import com.dzafirov.tvskin.lastapp.LastAppStore
 import com.dzafirov.tvskin.lastapp.openedAgo
 import com.dzafirov.tvskin.lastapp.pickLastApp
 import com.dzafirov.tvskin.ui.TvSkinTheme
+import androidx.lifecycle.lifecycleScope
+import com.dzafirov.tvskin.weather.WeatherRepository
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity(), HomeActions {
@@ -30,6 +33,7 @@ class MainActivity : ComponentActivity(), HomeActions {
     private lateinit var prefs: AppPrefs
     private lateinit var repo: AppRepository
     private lateinit var lastApps: LastAppStore
+    private val weather = WeatherRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity(), HomeActions {
                 LaunchedEffect(Unit) {
                     while (true) {
                         model.tick()
+                        if (LocalDateTime.now().minute % 30 == 0) refreshWeather()
                         delay(60_000L - (LocalDateTime.now().second * 1000L))
                     }
                 }
@@ -60,6 +65,15 @@ class MainActivity : ComponentActivity(), HomeActions {
         model.refreshApps()
         model.tick()
         refreshLastApp()
+        refreshWeather()
+    }
+
+    /** Weather in the top bar and the Today card; on failure the old values (or none) stay. */
+    private fun refreshWeather() {
+        lifecycleScope.launch {
+            val forecast = weather.forecast() ?: return@launch
+            model.update { it.copy(weather = forecast.now, hours = forecast.hours) }
+        }
     }
 
     /** "Back to <app>": the newest app opened from here or (with usage access) anywhere. */

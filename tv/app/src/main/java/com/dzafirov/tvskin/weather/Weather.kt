@@ -21,3 +21,34 @@ fun weatherIcon(code: Int, night: Boolean): Int = when (code) {
     in 95..99 -> R.drawable.wx_storm
     else -> R.drawable.wx_cloud
 }
+
+/** Plain words for a WMO weather code, as the home screen and screensaver show them. */
+fun describe(code: Int): String = when (code) {
+    0 -> "clear"
+    1, 2, 3 -> "partly cloudy"
+    45, 48 -> "fog"
+    in 51..67 -> "rain"
+    in 71..77 -> "snow"
+    in 80..82 -> "showers"
+    in 95..99 -> "storms"
+    else -> "cloudy"
+}
+
+/** `current` from an Open-Meteo forecast response, or null on any problem. */
+fun parseOpenMeteo(json: String): WeatherNow? = runCatching {
+    val current = org.json.JSONObject(json).getJSONObject("current")
+    val code = current.getInt("weather_code")
+    WeatherNow(Math.round(current.getDouble("temperature_2m")).toInt(), describe(code), code)
+}.getOrNull()
+
+/** `hourly` from an Open-Meteo response, in time order; empty on any problem. */
+fun parseHours(json: String): List<HourWeather> = runCatching {
+    val hourly = org.json.JSONObject(json).getJSONObject("hourly")
+    val times = hourly.getJSONArray("time")
+    val temps = hourly.getJSONArray("temperature_2m")
+    val codes = hourly.getJSONArray("weather_code")
+    (0 until times.length()).map { i ->
+        val hour = times.getString(i).substringAfter('T').substringBefore(':').toInt()
+        HourWeather(hour, Math.round(temps.getDouble(i)).toInt(), codes.getInt(i))
+    }
+}.getOrDefault(emptyList())
