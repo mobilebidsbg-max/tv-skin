@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -31,7 +33,7 @@ import com.dzafirov.tvskin.ui.TvType
 
 /** Greeting and the three smart buttons: Back to… · Side by side · Sleep. */
 @Composable
-fun Hero(state: HomeState, actions: HomeActions, onSleep: () -> Unit, modifier: Modifier = Modifier) {
+fun Hero(state: HomeState, actions: HomeActions, onSleep: () -> Unit, focusFor: (String) -> FocusRequester, modifier: Modifier = Modifier) {
     Column(modifier) {
         Text(state.greeting, style = TvType.greeting)
         Spacer(Modifier.height(15.dp))
@@ -52,7 +54,7 @@ fun Hero(state: HomeState, actions: HomeActions, onSleep: () -> Unit, modifier: 
                 SmartIcon(R.drawable.ic_split)
             }
             val sleepSub = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
-            SmartButton(stringResource(R.string.sleep), sleepSub, onSleep, "smart:sleep") {
+            SmartButton(stringResource(R.string.sleep), sleepSub, onSleep, "smart:sleep", Modifier.focusRequester(focusFor("smart:sleep"))) {
                 SmartIcon(R.drawable.ic_moon)
             }
         }
@@ -60,10 +62,10 @@ fun Hero(state: HomeState, actions: HomeActions, onSleep: () -> Unit, modifier: 
 }
 
 @Composable
-private fun SmartButton(title: String, subtitle: String?, onClick: () -> Unit, tag: String, leading: @Composable () -> Unit) {
+private fun SmartButton(title: String, subtitle: String?, onClick: () -> Unit, tag: String, modifier: Modifier = Modifier, leading: @Composable () -> Unit) {
     FocusSurface(
         onClick = onClick,
-        modifier = Modifier.height(Sizes.smartHeight).testTag(tag),
+        modifier = modifier.height(Sizes.smartHeight).testTag(tag),
         radius = Sizes.smartRadius,
         edge = Color.White.copy(alpha = 0.1f),
     ) {

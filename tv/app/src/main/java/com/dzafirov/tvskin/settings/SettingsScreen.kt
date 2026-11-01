@@ -12,7 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +43,9 @@ import com.dzafirov.tvskin.ui.Wallpaper
 @Composable
 fun SettingsPanel(state: HomeState, actions: HomeActions, modifier: Modifier = Modifier) {
     val first = remember { FocusRequester() }
+    val rows = remember { mutableMapOf<String, FocusRequester>() }
+    fun rowFocus(id: String) = rows.getOrPut(id) { FocusRequester() }
+    var pendingRow by remember { mutableStateOf<String?>(null) }
     GlassPanel(state.wallpaper, modifier, radius = 20.dp) {
         Column(Modifier.padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.settings), style = TvType.greeting.copy(fontSize = 20.sp))
@@ -70,8 +76,12 @@ fun SettingsPanel(state: HomeState, actions: HomeActions, modifier: Modifier = M
             }
             state.hiddenApps.forEach { entry ->
                 FocusSurface(
-                    onClick = { actions.unhide(entry) },
-                    modifier = Modifier.fillMaxWidth().height(30.dp).testTag("settings:hidden:${entry.id}"),
+                    onClick = {
+                        val i = state.hiddenApps.indexOf(entry)
+                        pendingRow = (state.hiddenApps.getOrNull(i + 1) ?: state.hiddenApps.getOrNull(i - 1))?.id ?: FIRST
+                        actions.unhide(entry)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(30.dp).testTag("settings:hidden:${entry.id}").focusRequester(rowFocus(entry.id)),
                     radius = 10.dp,
                     focusedScale = 1.02f,
                     container = Color.White.copy(alpha = 0.06f),
@@ -108,7 +118,16 @@ fun SettingsPanel(state: HomeState, actions: HomeActions, modifier: Modifier = M
         withFrameNanos { }
         runCatching { first.requestFocus() }
     }
+    LaunchedEffect(pendingRow, state.hiddenApps) {
+        val id = pendingRow ?: return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { if (id == FIRST) first.requestFocus() else rowFocus(id).requestFocus() }
+        pendingRow = null
+    }
 }
+
+private const val FIRST = "first"
+
 
 @Composable
 private fun Section(title: Int) {

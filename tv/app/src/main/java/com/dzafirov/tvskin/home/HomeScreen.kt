@@ -66,6 +66,8 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     var menuFor by remember { mutableStateOf<AppEntry?>(null) }
     var inputsOpen by remember { mutableStateOf(false) }
     var sleepOpen by remember { mutableStateOf(false) }
+    // The control that opened the sleep or input sheet; focus returns there when the sheet closes.
+    var sheetOpener by remember { mutableStateOf<String?>(null) }
     var movingId by remember { mutableStateOf<String?>(null) }
     // The tile to focus once the next layout is done (after a menu closes, a move, or a hide).
     var pendingFocus by remember { mutableStateOf(state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id) }
@@ -82,7 +84,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     BackHandler(enabled = page != Tab.HOME && menuFor == null && movingId == null) { onTab(Tab.HOME) }
 
     BackHandler(enabled = menuFor != null || inputsOpen || sleepOpen) {
-        pendingFocus = menuFor?.id ?: "widget:input"
+        pendingFocus = menuFor?.id ?: sheetOpener
         menuFor = null
         inputsOpen = false
         sleepOpen = false
@@ -122,7 +124,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             }
             Band(state.wallpaper, Modifier.offset((-48).dp, 300.dp).unbounded().size(1056.dp, 500.dp))
 
-            Hero(state, actions, onSleep = { sleepOpen = true }, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
+            Hero(state, actions, onSleep = { sleepOpen = true; sheetOpener = "smart:sleep" }, focusFor = ::focusFor, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
             if (movingId != null) {
                 Text(stringResource(R.string.menu_move_hint), style = TvType.label, color = Color.White, modifier = Modifier.offset(62.dp, Sizes.appsTop - 18.dp))
             }
@@ -133,7 +135,12 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             )
 
             Text(stringResource(R.string.today), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.widgetsLabelTop))
-            WidgetsRow(state, onSleep = { sleepOpen = true }, onInputs = { inputsOpen = true }, modifier = Modifier.offset(y = Sizes.widgetsTop).section(Section.LOWER))
+            WidgetsRow(
+                state,
+                onSleep = { sleepOpen = true; sheetOpener = "widget:sleep" },
+                onInputs = { inputsOpen = true; sheetOpener = "widget:input" },
+                focusFor = ::focusFor,
+                modifier = Modifier.offset(y = Sizes.widgetsTop).section(Section.LOWER))
 
             if (state.promos.isNotEmpty()) {
                 Text(stringResource(R.string.promo_label), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.stripLabelTop))
@@ -167,6 +174,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
                         R.drawable.ic_moon,
                     ) {
                         sleepOpen = false
+                        pendingFocus = sheetOpener
                         actions.setSleep(minutes)
                     }
                 },
@@ -180,6 +188,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
                 items = state.tvItems.filter { it.kind != AppEntry.Kind.SETTINGS }.map { item ->
                     MenuItem("menu:tv:${item.id}", item.label, if (item.kind == AppEntry.Kind.LIVE_TV) R.drawable.ic_tv else R.drawable.ic_input) {
                         inputsOpen = false
+                        pendingFocus = sheetOpener
                         actions.open(item)
                     }
                 },
@@ -189,14 +198,22 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
         }
     }
 
+    // Home pressed again while this screen is open: back to the home row with everything closed.
+    LaunchedEffect(state.resetToken) {
+        if (state.resetToken == 0) return@LaunchedEffect
+        page = Tab.HOME
+        menuFor = null
+        inputsOpen = false
+        sleepOpen = false
+        movingId = null
+        section = Section.UPPER
+        pendingFocus = state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id
+    }
+
     // Focus a tile once the row has been laid out (requesting earlier finds no node). Starts on the first app.
     LaunchedEffect(pendingFocus, state.apps, state.tvItems) {
         val id = pendingFocus ?: return@LaunchedEffect
         withFrameNanos { }
-        if (id == "widget:input") {
-            pendingFocus = null
-            return@LaunchedEffect
-        }
         if (runCatching { focusFor(id).requestFocus() }.isSuccess) pendingFocus = null
     }
 }

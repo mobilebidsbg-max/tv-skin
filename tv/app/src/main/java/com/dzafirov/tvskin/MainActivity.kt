@@ -70,7 +70,12 @@ class MainActivity : ComponentActivity(), HomeActions {
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
-        if (AdminSwitch.handle(this, intent)) soon("Sleep timer can no longer turn the TV off")
+        if (AdminSwitch.handle(this, intent)) {
+            soon("Sleep timer can no longer turn the TV off")
+            return
+        }
+        // Home pressed (or the launcher opened) while it is already showing: reset to the home row.
+        model.update { it.copy(resetToken = it.resetToken + 1) }
     }
 
     override fun onResume() {

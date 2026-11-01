@@ -27,6 +27,8 @@ data class HomeState(
     val hiddenApps: List<AppEntry> = emptyList(),
     val sleepDefaultMinutes: Int = 60,
     val version: String = "",
+    /** Bumped when Home is pressed while this screen is already open: back to the home row, menus closed. */
+    val resetToken: Int = 0,
 )
 
 interface HomeActions {

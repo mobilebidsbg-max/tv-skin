@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -38,10 +40,10 @@ import com.dzafirov.tvskin.weather.weatherIcon
 
 /** v5 "Today" row. Calendar and Memories wait for their data source; Picture and Sound for the TCL check. */
 @Composable
-fun WidgetsRow(state: HomeState, onSleep: () -> Unit, onInputs: () -> Unit, modifier: Modifier = Modifier) {
+fun WidgetsRow(state: HomeState, onSleep: () -> Unit, onInputs: () -> Unit, focusFor: (String) -> FocusRequester, modifier: Modifier = Modifier) {
     Row(modifier.padding(start = Sizes.sideMargin), horizontalArrangement = Arrangement.spacedBy(Sizes.rowGap)) {
         WeatherCard(state)
-        QuickControls(state, onSleep, onInputs)
+        QuickControls(state, onSleep, onInputs, focusFor)
     }
 }
 
@@ -85,12 +87,12 @@ private fun WeatherCard(state: HomeState) {
 }
 
 @Composable
-private fun QuickControls(state: HomeState, onSleep: () -> Unit, onInputs: () -> Unit) {
+private fun QuickControls(state: HomeState, onSleep: () -> Unit, onInputs: () -> Unit, focusFor: (String) -> FocusRequester) {
     GlassPanel(state.wallpaper, Modifier.size(Sizes.widgetWidth, Sizes.widgetHeight), radius = Sizes.widgetRadius) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             val sleepValue = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
-            QuickTile(R.drawable.ic_moon, stringResource(R.string.sleep_timer), sleepValue, onSleep, "widget:sleep", Modifier.weight(1f))
-            QuickTile(R.drawable.ic_input, stringResource(R.string.input), stringResource(R.string.choose), onInputs, "widget:input", Modifier.weight(1f))
+            QuickTile(R.drawable.ic_moon, stringResource(R.string.sleep_timer), sleepValue, onSleep, "widget:sleep", Modifier.weight(1f).focusRequester(focusFor("widget:sleep")))
+            QuickTile(R.drawable.ic_input, stringResource(R.string.input), stringResource(R.string.choose), onInputs, "widget:input", Modifier.weight(1f).focusRequester(focusFor("widget:input")))
         }
     }
 }
