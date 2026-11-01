@@ -17,6 +17,10 @@ Connect first: `adb connect 192.168.8.16:5555`. Every command below is run from 
 | 7 | Google's home screen switched off for user 0 (Home ignored the role while it was on) | `shell pm disable-user --user 0 com.google.android.apps.tv.launcherx` | `shell pm enable com.google.android.apps.tv.launcherx` |
 | 8 | Google's setup app switched off for user 0. Its "RecoveryActivity" catches Home when the launcher is off, and Android doesn't let adb switch off a single screen of another app. | `shell pm disable-user --user 0 com.google.android.tungsten.setupwraith` | `shell pm enable com.google.android.tungsten.setupwraith` |
 
+| 9 | Free-form windows switched on (side by side), then a reboot | `shell settings put global enable_freeform_support 1` and `shell settings put global force_resizable_activities 1` (both were `null`) | `shell settings delete global enable_freeform_support`, `shell settings delete global force_resizable_activities`, reboot |
+| 10 | Key service "TV Skin side by side" (accessibility, key filtering only; it acts only while side by side is on) | `shell settings put secure enabled_accessibility_services com.dzafirov.tvskin/com.dzafirov.tvskin.split.SplitKeys` and `shell settings put secure accessibility_enabled 1` (before: empty and `0`) | `shell settings delete secure enabled_accessibility_services` and `shell settings put secure accessibility_enabled 0` |
+| 11 | TV Skin's own adb key, approved on the TV with "Always allow", so the launcher can open windows, resize and mute them without the Mac | First side by side from the TV shows "Allow USB debugging? TV Skin@tv" | TV Settings → Developer options → Revoke USB debugging authorizations (this also revokes the Mac's) |
+
 **Full undo of the home-screen switch:** run the undo of 8, 7 and 6, then press Home. A factory reset also restores everything.
 
 **What happened while switching (2026-11-01 23:58):**
