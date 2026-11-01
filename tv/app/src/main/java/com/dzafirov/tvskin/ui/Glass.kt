@@ -28,16 +28,3 @@ fun GlassPanel(
         content()
     }
 }
-
-/** The darker blurred band behind the rows (v5 `.band`): fades in from the top, darkens towards the bottom. */
-@Composable
-fun Band(wallpaper: Wallpaper, modifier: Modifier = Modifier) {
-    Box(modifier) {
-        Frost(wallpaper, Modifier.matchParentSize(), feather = 65.dp, darken = 0f, featherSides = false)
-        Box(
-            Modifier.matchParentSize().background(
-                Brush.verticalGradient(0f to Color.Transparent, 0.17f to Color(0x4D0E0A06), 1f to Color(0x8C0E0A06)),
-            ),
-        )
-    }
-}

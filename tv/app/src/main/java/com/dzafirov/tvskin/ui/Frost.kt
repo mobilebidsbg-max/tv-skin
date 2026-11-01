@@ -52,7 +52,8 @@ fun Frost(
                 origin = it.positionInRoot()
                 rootSize = it.findRootCoordinates().size
             }
-            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+            // Only feathered glass needs its own offscreen layer (for the DstIn fade); plain glass is a clipped draw.
+            .then(if (feather > 0.dp) Modifier.graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen) else Modifier)
             .drawWithContent {
                 if (rootSize != IntSize.Zero) {
                     drawImage(
@@ -64,6 +65,10 @@ fun Frost(
                         filterQuality = FilterQuality.Medium,
                     )
                     drawRect(Color.Black.copy(alpha = darken))
+                    if (feather <= 0.dp) {
+                        drawContent()
+                        return@drawWithContent
+                    }
                     val fx = (feather.toPx() / size.width).coerceIn(0f, 0.5f)
                     val fy = (feather.toPx() / size.height).coerceIn(0f, 0.5f)
                     if (featherSides) {

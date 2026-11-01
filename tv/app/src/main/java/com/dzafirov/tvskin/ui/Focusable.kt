@@ -55,7 +55,8 @@ fun FocusSurface(
         ),
         glow = ClickableSurfaceDefaults.glow(
             glow = Glow.None,
-            focusedGlow = Glow(elevationColor = Color.Black.copy(alpha = 0.55f), elevation = 14.dp),
+            // No shadow: on this TV's GPU a focused-tile shadow costs a whole frame; the lift is the scale.
+            focusedGlow = Glow.None,
         ),
         interactionSource = interactionSource,
         content = body,

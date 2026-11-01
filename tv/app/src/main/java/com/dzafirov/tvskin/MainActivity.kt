@@ -60,7 +60,9 @@ class MainActivity : ComponentActivity(), HomeActions {
         setContent {
             TvSkinTheme {
                 val state by model.state
-                HomeScreen(state, this)
+                androidx.compose.runtime.CompositionLocalProvider(com.dzafirov.tvskin.ui.LocalUhdWallpaper provides true) {
+                    HomeScreen(state, this)
+                }
                 LaunchedEffect(Unit) {
                     while (true) {
                         model.tick()

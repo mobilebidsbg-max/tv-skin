@@ -16,6 +16,16 @@ android {
         versionName = "0.1"
     }
 
+    buildTypes {
+        release {
+            // Optimised build for the TV: R8 shrinks and optimises Compose; signed with the debug key (side-loaded).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -42,6 +52,7 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.tv.material)
     implementation(libs.coroutines.android)
+    implementation(libs.androidx.profileinstaller)
 
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)

@@ -40,8 +40,10 @@ import com.dzafirov.tvskin.R
 import com.dzafirov.tvskin.apps.AppEntry
 import com.dzafirov.tvskin.settings.SettingsPanel
 import com.dzafirov.tvskin.sleep.SleepTimer
-import com.dzafirov.tvskin.ui.Band
-import com.dzafirov.tvskin.ui.Frost
+import com.dzafirov.tvskin.ui.BakedBand
+import com.dzafirov.tvskin.ui.LocalUhdWallpaper
+import com.dzafirov.tvskin.ui.UhdWallpaperSurface
+import com.dzafirov.tvskin.ui.BakedFrost
 import com.dzafirov.tvskin.ui.Sizes
 import com.dzafirov.tvskin.ui.TvType
 import com.dzafirov.tvskin.ui.WallpaperImage
@@ -58,6 +60,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     var section by remember { mutableStateOf(Section.UPPER) }
     val scroll by animateDpAsState(if (section == Section.LOWER) -Sizes.scrollOffset else 0.dp, tween(600), label = "scroll")
     val heroAlpha by animateFloatAsState(if (section == Section.LOWER) 0f else 1f, tween(450), label = "hero")
+    val lower by animateFloatAsState(if (section == Section.LOWER) 1f else 0f, tween(600), label = "band")
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     fun focusFor(id: String) = requesters.getOrPut(id) { FocusRequester() }
     fun Modifier.section(s: Section) = onFocusChanged { if (it.hasFocus) section = s }
@@ -106,23 +109,34 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             true
         },
     ) {
-        WallpaperImage(state.wallpaper)
-        Box(Modifier.fillMaxWidth().height(76.dp).background(Brush.verticalGradient(listOf(Color(0x47000000), Color.Transparent))))
+        val uhd = LocalUhdWallpaper.current
+        if (uhd) {
+            UhdWallpaperSurface(state.wallpaper)
+        } else {
+            WallpaperImage(state.wallpaper)
+            Box(Modifier.fillMaxWidth().height(76.dp).background(Brush.verticalGradient(listOf(Color(0x47000000), Color.Transparent))))
+        }
 
+        // Pre-rendered glass, aligned with the still wallpaper: the band fades from its home position to its
+        // scrolled-up position, the frost behind the hero fades out with the hero.
+        if (page == Tab.HOME) {
+            // In 4K mode the home band and frost are already part of the wallpaper surface.
+            if (!uhd) {
+                BakedBand(state.wallpaper, top = 300.dp, alpha = 1f - lower)
+                BakedFrost(state.wallpaper, 0.dp, 145.dp, 670.dp, 190.dp, feather = 90.dp, darken = 0.15f, alpha = heroAlpha)
+            }
+            BakedBand(state.wallpaper, top = 130.dp, alpha = lower)
+        }
         if (page == Tab.SETTINGS) {
             SettingsPanel(state, actions, Modifier.align(Alignment.TopEnd).padding(top = 70.dp, end = Sizes.sideMargin, bottom = 30.dp).size(420.dp, 440.dp))
         } else if (page == Tab.APPS) {
-            Band(state.wallpaper, Modifier.offset(y = 40.dp).unbounded().size(Sizes.screenWidth, 500.dp))
+            BakedBand(state.wallpaper, top = 40.dp)
             AppsPage(
                 state.apps, actions, ::focusFor, movingId,
                 onHold = { menuFor = it },
                 modifier = Modifier.fillMaxSize().padding(top = 70.dp),
             )
         } else Box(Modifier.fillMaxSize().offset { IntOffset(0, scroll.roundToPx()) }) {
-            Box(Modifier.graphicsLayer { alpha = heroAlpha }) {
-                Frost(state.wallpaper, Modifier.offset((-30).dp, 145.dp).unbounded().size(700.dp, 190.dp), feather = 90.dp, darken = 0.15f)
-            }
-            Band(state.wallpaper, Modifier.offset(y = 300.dp).fillMaxWidth().unbounded().size(Sizes.screenWidth, 500.dp))
 
             Hero(state, actions, onSleep = { sleepOpen = true; sheetOpener = "smart:sleep" }, focusFor = ::focusFor, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
             if (movingId != null) {
