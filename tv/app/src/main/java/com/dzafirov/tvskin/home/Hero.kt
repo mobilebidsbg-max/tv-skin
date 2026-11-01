@@ -31,7 +31,7 @@ import com.dzafirov.tvskin.ui.TvType
 
 /** Greeting and the three smart buttons: Back to… · Side by side · Sleep. */
 @Composable
-fun Hero(state: HomeState, actions: HomeActions, modifier: Modifier = Modifier) {
+fun Hero(state: HomeState, actions: HomeActions, onSleep: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier) {
         Text(state.greeting, style = TvType.greeting)
         Spacer(Modifier.height(15.dp))
@@ -52,7 +52,7 @@ fun Hero(state: HomeState, actions: HomeActions, modifier: Modifier = Modifier) 
                 SmartIcon(R.drawable.ic_split)
             }
             val sleepSub = state.sleepLeftMinutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off)
-            SmartButton(stringResource(R.string.sleep), sleepSub, actions::sleep, "smart:sleep") {
+            SmartButton(stringResource(R.string.sleep), sleepSub, onSleep, "smart:sleep") {
                 SmartIcon(R.drawable.ic_moon)
             }
         }

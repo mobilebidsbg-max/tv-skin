@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import com.dzafirov.tvskin.R
 import com.dzafirov.tvskin.apps.AppEntry
+import com.dzafirov.tvskin.sleep.SleepTimer
 import com.dzafirov.tvskin.ui.Band
 import com.dzafirov.tvskin.ui.Frost
 import com.dzafirov.tvskin.ui.Sizes
@@ -63,6 +64,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     var page by remember { mutableStateOf(Tab.HOME) }
     var menuFor by remember { mutableStateOf<AppEntry?>(null) }
     var inputsOpen by remember { mutableStateOf(false) }
+    var sleepOpen by remember { mutableStateOf(false) }
     var movingId by remember { mutableStateOf<String?>(null) }
     // The tile to focus once the next layout is done (after a menu closes, a move, or a hide).
     var pendingFocus by remember { mutableStateOf(state.apps.firstOrNull()?.id ?: state.tvItems.firstOrNull()?.id) }
@@ -78,10 +80,11 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
     }
     BackHandler(enabled = page == Tab.APPS && menuFor == null && movingId == null) { onTab(Tab.HOME) }
 
-    BackHandler(enabled = menuFor != null || inputsOpen) {
+    BackHandler(enabled = menuFor != null || inputsOpen || sleepOpen) {
         pendingFocus = menuFor?.id ?: "widget:input"
         menuFor = null
         inputsOpen = false
+        sleepOpen = false
     }
 
     Box(
@@ -116,7 +119,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             }
             Band(state.wallpaper, Modifier.offset((-48).dp, 300.dp).unbounded().size(1056.dp, 500.dp))
 
-            Hero(state, actions, Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
+            Hero(state, actions, onSleep = { sleepOpen = true }, modifier = Modifier.offset(Sizes.sideMargin, Sizes.heroTop).graphicsLayer { alpha = heroAlpha }.section(Section.UPPER))
             if (movingId != null) {
                 Text(stringResource(R.string.menu_move_hint), style = TvType.label, color = Color.White, modifier = Modifier.offset(62.dp, Sizes.appsTop - 18.dp))
             }
@@ -127,7 +130,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
             )
 
             Text(stringResource(R.string.today), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.widgetsLabelTop))
-            WidgetsRow(state, actions, onInputs = { inputsOpen = true }, modifier = Modifier.offset(y = Sizes.widgetsTop).section(Section.LOWER))
+            WidgetsRow(state, onSleep = { sleepOpen = true }, onInputs = { inputsOpen = true }, modifier = Modifier.offset(y = Sizes.widgetsTop).section(Section.LOWER))
 
             if (state.promos.isNotEmpty()) {
                 Text(stringResource(R.string.promo_label), style = TvType.label, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.offset(62.dp, Sizes.stripLabelTop))
@@ -137,7 +140,7 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
 
         TopBar(state, page, ::onTab, Modifier.padding(horizontal = 48.dp).offset(y = Sizes.topBarTop).section(Section.UPPER))
 
-        if (menuFor != null || inputsOpen) {
+        if (menuFor != null || inputsOpen || sleepOpen) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)))
         }
         menuFor?.let { entry ->
@@ -147,6 +150,23 @@ fun HomeScreen(state: HomeState, actions: HomeActions) {
                     close = { focusId -> menuFor = null; pendingFocus = focusId },
                     startMove = { movingId = entry.id; menuFor = null; pendingFocus = entry.id },
                 ),
+                wallpaper = state.wallpaper,
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = Sizes.sideMargin),
+            )
+        }
+        if (sleepOpen) {
+            MenuSheet(
+                title = stringResource(R.string.sleep_timer),
+                items = listOf<Int?>(null).plus(SleepTimer.CHOICES).map { minutes ->
+                    MenuItem(
+                        "menu:sleep:${minutes ?: "off"}",
+                        minutes?.let { stringResource(R.string.minutes_short, it) } ?: stringResource(R.string.off),
+                        R.drawable.ic_moon,
+                    ) {
+                        sleepOpen = false
+                        actions.setSleep(minutes)
+                    }
+                },
                 wallpaper = state.wallpaper,
                 modifier = Modifier.align(Alignment.CenterEnd).padding(end = Sizes.sideMargin),
             )

@@ -29,7 +29,8 @@ data class HomeState(
 interface HomeActions {
     fun open(e: AppEntry)
     fun sideBySide()
-    fun sleep()
+    /** Start the sleep timer for [minutes], or switch it off (null). */
+    fun setSleep(minutes: Int?)
     /** Hide an app from the row (hold-OK menu). */
     fun hide(e: AppEntry)
     /** Move an app [delta] places in the row (hold-OK menu, Move). */

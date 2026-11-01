@@ -22,6 +22,8 @@ import com.dzafirov.tvskin.lastapp.openedAgo
 import com.dzafirov.tvskin.lastapp.pickLastApp
 import com.dzafirov.tvskin.ui.TvSkinTheme
 import androidx.lifecycle.lifecycleScope
+import com.dzafirov.tvskin.sleep.SleepScheduler
+import com.dzafirov.tvskin.sleep.SleepTimer
 import com.dzafirov.tvskin.weather.WeatherRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity(), HomeActions {
     private lateinit var repo: AppRepository
     private lateinit var lastApps: LastAppStore
     private val weather = WeatherRepository()
+    private lateinit var sleep: SleepScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +44,7 @@ class MainActivity : ComponentActivity(), HomeActions {
         repo = AppRepository(this)
         model = HomeModel(this, prefs, repo)
         lastApps = LastAppStore(this)
+        sleep = SleepScheduler(this)
         launcher = AppLauncher(this, onLaunched = { lastApps.record(it) })
         model.tick()
         // This is the home screen: Back has nowhere to go.
@@ -52,6 +56,7 @@ class MainActivity : ComponentActivity(), HomeActions {
                 LaunchedEffect(Unit) {
                     while (true) {
                         model.tick()
+                        refreshSleep()
                         if (LocalDateTime.now().minute % 30 == 0) refreshWeather()
                         delay(60_000L - (LocalDateTime.now().second * 1000L))
                     }
@@ -66,6 +71,7 @@ class MainActivity : ComponentActivity(), HomeActions {
         model.tick()
         refreshLastApp()
         refreshWeather()
+        refreshSleep()
     }
 
     /** Weather in the top bar and the Today card; on failure the old values (or none) stay. */
@@ -93,7 +99,16 @@ class MainActivity : ComponentActivity(), HomeActions {
     }
 
     override fun sideBySide() = soon("Two windows come next")
-    override fun sleep() = soon("Sleep timer comes next")
+    override fun setSleep(minutes: Int?) {
+        val now = System.currentTimeMillis()
+        sleep.set(if (minutes == null) SleepTimer(null) else SleepTimer(null).start(now, minutes))
+        refreshSleep()
+    }
+
+    private fun refreshSleep() {
+        val left = sleep.current().minutesLeft(System.currentTimeMillis())
+        model.update { it.copy(sleepLeftMinutes = left) }
+    }
     override fun hide(e: AppEntry) {
         prefs.hidden = prefs.hiddenFor(repo.apps().map { it.id }) + e.id
         model.refreshApps()
