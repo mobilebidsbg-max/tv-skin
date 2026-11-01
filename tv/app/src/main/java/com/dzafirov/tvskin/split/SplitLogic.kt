@@ -30,17 +30,28 @@ object SplitCommands {
     fun bringToFront(component: String) =
         "am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -n $component"
 
+    /** A tap just inside the window's top-left corner: the TV moves key focus to that window (checked on the TV). */
+    fun tap(r: PxRect) = "input tap ${r.left + 4} ${r.top + 4}"
+
     fun resize(taskId: Int, r: PxRect) = "am task resize $taskId ${r.left} ${r.top} ${r.right} ${r.bottom}"
     fun mute(pkg: String) = "appops set $pkg PLAY_AUDIO ignore"
     fun unmute(pkg: String) = "appops set $pkg PLAY_AUDIO default"
     fun remove(taskId: Int) = "cmd activity stack remove $taskId"
 }
 
-private val TASK_LINE = Regex("""taskId=(\d+): ([\w.]+)/""")
+private val TASK_LINE = Regex("""taskId=(\d+): ([\w.]+)/\S*(?: bounds=\[(\d+),(\d+)\]\[(\d+),(\d+)\])?""")
 
-/** The task id of [pkg] in `cmd activity stack list` output (exact package match), or null. */
+/**
+ * The task id of [pkg] in `cmd activity stack list` output (exact package match), or null. The newest one wins:
+ * apps like YouTube start in one task and hand over to another.
+ */
 fun taskIdFor(pkg: String, stackList: String): Int? =
-    TASK_LINE.findAll(stackList).firstOrNull { it.groupValues[2] == pkg }?.groupValues?.get(1)?.toInt()
+    TASK_LINE.findAll(stackList).filter { it.groupValues[2] == pkg }.map { it.groupValues[1].toInt() }.maxOrNull()
+
+/** The window bounds of task [taskId] in `cmd activity stack list` output. */
+fun boundsFor(taskId: Int, stackList: String): PxRect? =
+    TASK_LINE.findAll(stackList).firstOrNull { it.groupValues[1].toInt() == taskId && it.groupValues[3].isNotEmpty() }
+        ?.groupValues?.let { g -> PxRect(g[3].toInt(), g[4].toInt(), g[5].toInt(), g[6].toInt()) }
 
 enum class BarItem { LEFT, RIGHT, SWAP, HALF, WIDE, FULL, END }
 

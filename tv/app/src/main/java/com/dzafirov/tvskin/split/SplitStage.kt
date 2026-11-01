@@ -45,7 +45,7 @@ private fun px(v: Int): Dp = (v / 2f).dp
 /**
  * What the launcher shows behind the two app windows (mockup v3, made quieter): the wallpaper blurred and dark,
  * each app's name and sound state above its window, a thin white frame around the one in control, the time, and
- * at the bottom the control bar (opened with Home) or a small hint.
+ * at the bottom the control bar (opened by holding Back) or a small hint.
  */
 @Composable
 fun SplitStage(s: SplitState, wallpaper: Wallpaper, time: String) {
@@ -89,7 +89,7 @@ private fun Hint(modifier: Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("⌂", style = TvType.button.copy(fontSize = 12.sp), color = Color.White.copy(alpha = 0.8f))
+        Text("↩", style = TvType.button.copy(fontSize = 12.sp), color = Color.White.copy(alpha = 0.8f))
         Text(stringResource(R.string.split_hint), style = TvType.buttonSub.copy(fontSize = 10.sp), color = Color.White.copy(alpha = 0.8f))
     }
 }

@@ -33,6 +33,7 @@ class SplitLogicTest {
         assertEquals("appops set com.internet.tvbrowser PLAY_AUDIO default", SplitCommands.unmute("com.internet.tvbrowser"))
         assertEquals("cmd activity stack remove 334", SplitCommands.remove(334))
         assertEquals("cmd activity stack list", SplitCommands.LIST)
+        assertEquals("input tap 52 200", SplitCommands.tap(PxRect(48, 196, 948, 702))) // just inside the corner
     }
 
     @Test
@@ -41,6 +42,8 @@ class SplitLogicTest {
         assertEquals(334, taskIdFor("com.internet.tvbrowser", stackList))
         assertNull(taskIdFor("com.netflix.ninja", stackList))
         assertNull(taskIdFor("com.google.android.youtube", stackList)) // a prefix is not a match
+        assertEquals(PxRect(60, 175, 930, 665), boundsFor(333, stackList))
+        assertEquals(500, taskIdFor("a.b", "  taskId=400: a.b/x bounds=[0,0][1,1]\n  taskId=500: a.b/y bounds=[0,0][1,1]")) // the newest task
     }
 
     @Test

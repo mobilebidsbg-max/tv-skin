@@ -9,17 +9,32 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Pretends to be the TV: windowed launches create tasks (ids from 100), `stack remove` deletes them. */
-class FakeShell : Shell {
+/**
+ * Pretends to be the TV: windowed launches create tasks (ids from 100), `stack remove` deletes them. Packages in
+ * [trampolines] hand over to a new task when the launcher waits ([settle]), like YouTube does.
+ */
+class FakeShell(private val trampolines: Set<String> = emptySet()) : Shell {
     val log = mutableListOf<String>()
     val tasks = linkedMapOf<String, Int>() // package -> task id
+    val bounds = mutableMapOf<Int, PxRect>()
     private var nextId = 100
+
+    fun settle() {
+        trampolines.filter { it in tasks }.forEach { tasks[it] = nextId++ }
+    }
 
     override suspend fun run(cmd: String): String {
         log += cmd
         Regex("""--windowingMode 5 .* -n ([\w.]+)/""").find(cmd)?.let { m -> tasks.getOrPut(m.groupValues[1]) { nextId++ } }
         Regex("""stack remove (\d+)""").find(cmd)?.let { m -> tasks.values.remove(m.groupValues[1].toInt()) }
-        if (cmd == SplitCommands.LIST) return tasks.entries.joinToString("\n") { (pkg, id) -> "  taskId=$id: $pkg/$pkg.Main bounds=[0,0][1,1]" }
+        Regex("""task resize (\d+) (\d+) (\d+) (\d+) (\d+)""").find(cmd)?.let { m ->
+            val v = m.groupValues.drop(1).map { it.toInt() }
+            bounds[v[0]] = PxRect(v[1], v[2], v[3], v[4])
+        }
+        if (cmd == SplitCommands.LIST) return tasks.entries.joinToString("\n") { (pkg, id) ->
+            val b = bounds[id] ?: PxRect(690, 454, 1770, 1061)
+            "  taskId=$id: $pkg/$pkg.Main bounds=[${b.left},${b.top}][${b.right},${b.bottom}] userId=0 visible=true"
+        }
         return ""
     }
 }
@@ -28,23 +43,30 @@ class SplitControllerTest {
     private val yt = AppEntry("com.google.android.youtube.tv", "YouTube", Kind.APP)
     private val web = AppEntry("com.internet.tvbrowser", "Browser", Kind.APP)
     private fun comp(e: AppEntry) = "${e.id}/${e.id}.Main"
-    private val shell = FakeShell()
-    private val c = SplitController(shell, componentOf = ::comp, pause = {})
+    private val shell = FakeShell(trampolines = setOf(yt.id))
+    private val c = SplitController(shell, componentOf = ::comp, pause = { shell.settle() })
 
     private fun actions() = shell.log.filter { it != SplitCommands.LIST }
 
     @Test
-    fun `start opens both windows, gives the left one control and mutes the right`() = runBlocking {
+    fun `start opens both windows, waits for YouTube's real window, gives the left one control`() = runBlocking {
         assertTrue(c.start(yt, web))
+        // YouTube's launch task (100) hands over to 102 while the launcher waits; 102 is the one that gets placed.
+        assertEquals(paneBounds(Ratio.HALF, 0), shell.bounds[102])
+        assertEquals(paneBounds(Ratio.HALF, 1), shell.bounds[101])
         assertEquals(
-            listOf(
-                SplitCommands.launchWindowed(comp(yt)), SplitCommands.resize(100, paneBounds(Ratio.HALF, 0)),
-                SplitCommands.launchWindowed(comp(web)), SplitCommands.resize(101, paneBounds(Ratio.HALF, 1)),
-                SplitCommands.unmute(yt.id), SplitCommands.mute(web.id), SplitCommands.bringToFront(comp(yt)),
-            ),
-            actions(),
+            listOf(SplitCommands.unmute(yt.id), SplitCommands.mute(web.id), SplitCommands.tap(paneBounds(Ratio.HALF, 0))),
+            actions().takeLast(3),
         )
         assertEquals(yt, c.state.value?.controlled)
+    }
+
+    @Test
+    fun `the check puts a window that moved back in its pane`() = runBlocking {
+        c.start(yt, web); shell.log.clear()
+        shell.bounds[101] = PxRect(10, 10, 500, 300)
+        c.check()
+        assertEquals(listOf(SplitCommands.resize(101, paneBounds(Ratio.HALF, 1))), actions())
     }
 
     @Test
@@ -53,8 +75,8 @@ class SplitControllerTest {
         c.control(Side.RIGHT)
         assertEquals(
             listOf(
-                SplitCommands.resize(100, paneBounds(Ratio.HALF, 0)), SplitCommands.resize(101, paneBounds(Ratio.HALF, 1)),
-                SplitCommands.unmute(web.id), SplitCommands.mute(yt.id), SplitCommands.bringToFront(comp(web)),
+                SplitCommands.resize(102, paneBounds(Ratio.HALF, 0)), SplitCommands.resize(101, paneBounds(Ratio.HALF, 1)),
+                SplitCommands.unmute(web.id), SplitCommands.mute(yt.id), SplitCommands.tap(paneBounds(Ratio.HALF, 1)),
             ),
             actions(),
         )
@@ -65,7 +87,7 @@ class SplitControllerTest {
         c.start(yt, web); shell.log.clear()
         c.swap()
         assertTrue(SplitCommands.resize(101, paneBounds(Ratio.HALF, 0)) in actions())
-        assertTrue(SplitCommands.resize(100, paneBounds(Ratio.HALF, 1)) in actions())
+        assertTrue(SplitCommands.resize(102, paneBounds(Ratio.HALF, 1)) in actions())
         shell.log.clear()
         c.ratio(Ratio.WIDE)
         assertTrue(SplitCommands.resize(101, paneBounds(Ratio.WIDE, 0)) in actions())
@@ -78,7 +100,7 @@ class SplitControllerTest {
         assertEquals(
             listOf(
                 SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id),
-                SplitCommands.resize(100, FULL_SCREEN), SplitCommands.remove(101), SplitCommands.bringToFront(comp(yt)),
+                SplitCommands.resize(102, FULL_SCREEN), SplitCommands.remove(101), SplitCommands.tap(FULL_SCREEN),
             ),
             actions(),
         )
@@ -90,7 +112,7 @@ class SplitControllerTest {
         c.start(yt, web); shell.log.clear()
         c.leave()
         assertEquals(
-            listOf(SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id), SplitCommands.resize(100, FULL_SCREEN), SplitCommands.resize(101, FULL_SCREEN)),
+            listOf(SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id), SplitCommands.resize(102, FULL_SCREEN), SplitCommands.resize(101, FULL_SCREEN)),
             actions(),
         )
         assertNull(c.state.value)
@@ -101,7 +123,7 @@ class SplitControllerTest {
         c.start(yt, web); shell.log.clear()
         shell.tasks.remove(web.id)
         c.check()
-        assertEquals(listOf(SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id), SplitCommands.resize(100, FULL_SCREEN), SplitCommands.bringToFront(comp(yt))), actions())
+        assertEquals(listOf(SplitCommands.unmute(yt.id), SplitCommands.unmute(web.id), SplitCommands.resize(102, FULL_SCREEN), SplitCommands.tap(FULL_SCREEN)), actions())
         assertNull(c.state.value)
     }
 
