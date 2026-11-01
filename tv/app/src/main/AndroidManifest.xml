@@ -36,6 +36,17 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".dream.ClockDream"
+            android:exported="true"
+            android:label="@string/saver_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
         <receiver android:name=".sleep.SleepReceiver" android:exported="false" />
         <receiver android:name=".sleep.BootReceiver" android:exported="true">
             <intent-filter>

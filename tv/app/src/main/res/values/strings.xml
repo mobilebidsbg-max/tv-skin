@@ -35,4 +35,5 @@
     <string name="settings_sleep_default">Sleep timer default</string>
     <string name="settings_about">About</string>
     <string name="settings_changes">Changes to the TV: see docs/TV-INSTALL.md on the Mac</string>
+    <string name="saver_name">TV Skin clock</string>
 </resources>
