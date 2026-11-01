@@ -55,9 +55,13 @@ fun MenuSheet(title: String, items: List<MenuItem>, wallpaper: Wallpaper, modifi
             Modifier.padding(8.dp).onPreviewKeyEvent { e ->
                 // Keep focus inside the sheet: sideways never leaves, up/down stop at the ends.
                 if (e.key in OK_KEYS) {
-                    if (e.type == KeyEventType.KeyDown) okDown.value = true
-                    if (e.type == KeyEventType.KeyUp) return@onPreviewKeyEvent !okDown.value.also { okDown.value = false }
-                    return@onPreviewKeyEvent false
+                    // Only a press that starts here counts: repeats and the release of the hold that opened the
+                    // sheet (they keep coming while the button is held) are swallowed.
+                    return@onPreviewKeyEvent when (e.type) {
+                        KeyEventType.KeyDown -> if (e.nativeKeyEvent.repeatCount == 0) { okDown.value = true; false } else !okDown.value
+                        KeyEventType.KeyUp -> !okDown.value.also { okDown.value = false }
+                        else -> false
+                    }
                 }
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (e.key) {

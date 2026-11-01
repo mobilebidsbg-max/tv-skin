@@ -80,4 +80,24 @@ class HoldKeyTest {
         compose.waitForIdle()
         assertEquals(listOf("com.google.android.youtube.tv"), opened)
     }
+
+    @Test
+    fun `repeats that reach the menu after it opens do not click it on release`() {
+        show()
+        // The TV's remote: the hold is noticed at the first repeat, the menu opens and takes focus,
+        // and the remote keeps sending repeats (now to the menu) until the button is released.
+        compose.onNodeWithTag(youtube).performKeyInput {
+            keyDown(Key.DirectionCenter)
+            advanceEventTime(700)
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("menu:open").assertIsFocused()
+        compose.onNodeWithTag("menu:open").performKeyInput {
+            advanceEventTime(600)
+            keyUp(Key.DirectionCenter)
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("menu:open").assertIsDisplayed()
+        assertEquals(emptyList<String>(), opened)
+    }
 }
