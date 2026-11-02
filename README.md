@@ -21,9 +21,19 @@ One-time setup (free Apple ID, no paid developer account needed):
 
 Every connected iPhone gets the app in one run. Each phone pairs with the TV on its own, so two phones can be used at the same time.
 
-## Re-install every 7 days
+## Renewal every 7 days (automatic, over Wi-Fi)
 
-A free Apple ID signs the app for 7 days. When it stops opening, plug in the iPhone and run `ios/scripts/install.sh` again. The pairing is kept.
+A free Apple ID signs the app for 7 days. The Mac renews it by itself:
+
+- Every evening at 20:30 launchd runs `ios/scripts/renew.sh` (job `com.dzafirov.tvskin.renew-remote`, a copy of it is in `ios/scripts/`).
+- It does nothing until a phone's last renewal is 5 days old. Then it runs `install.sh`, which installs over Wi-Fi on every iPhone at home. No cable is needed after the first install.
+- Renewals are recorded in `~/.tvskin/remote-renewed/<phone name>`; the log is `~/Library/Logs/tvskin-renew-remote.log`.
+- A phone that is still not renewed after 6 days gets a Mac notification. Keep it on the home Wi-Fi that evening, or run `ios/scripts/renew.sh --force`.
+- The Mac has to be on (asleep is fine; the check runs when it wakes). The pairing with the TV is kept.
+
+**A new iPhone:** do steps 2, 3 and 5 of the install above once with a cable, but run `ios/scripts/renew.sh --force` instead of `install.sh` so the phone is recorded. From then on it renews with the others.
+
+**Set the job up again** (e.g. on a new Mac): `cp ios/scripts/com.dzafirov.tvskin.renew-remote.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dzafirov.tvskin.renew-remote.plist`. **Remove it:** `launchctl bootout gui/$(id -u)/com.dzafirov.tvskin.renew-remote`, then delete the file. Tests: `ios/scripts/renew_test.sh`.
 
 ## Mac CLI
 
