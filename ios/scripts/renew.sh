@@ -5,7 +5,8 @@
 #
 # Run every evening by launchd (~/Library/LaunchAgents/com.dzafirov.tvskin.renew-remote.plist).
 # It does nothing until a phone's last renewal is RENEW_AFTER_DAYS old (or a phone was never renewed),
-# then runs install.sh, which installs over Wi-Fi on every iPhone that is home, unlocked or not.
+# then runs install.sh, which installs over Wi-Fi on every iPhone that is home. A phone that was missed (away,
+# locked, asleep) keeps its old stamp, so the next evening tries again.
 # A phone still not renewed after WARN_AFTER_DAYS gets a notification on the Mac.
 # --force renews now; --dry-run is passed to install.sh (prints the commands only).
 set -uo pipefail
