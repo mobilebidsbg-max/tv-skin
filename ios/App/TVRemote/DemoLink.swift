@@ -42,7 +42,7 @@ enum DemoMode {
     static let hasTextField = !CommandLine.arguments.contains("-demoNoTextField")
 
     /// The one TV the demo knows about.
-    static let tv = DiscoveredTV(id: "demo", name: "Smart TV Pro", host: "192.168.8.16")
+    static let tv = DiscoveredTV(id: "demo", name: "Smart TV Pro", host: "192.168.1.16")
 
     var store: PairedTVStore {
         switch self {
@@ -93,7 +93,7 @@ struct DemoLink: TVLinking {
 /// The TV that `-demo` pretends to have paired.
 struct DemoStore: PairedTVStore {
     func load() -> PairedTV? {
-        PairedTV(host: "192.168.8.16", name: "Living room TV", mac: "44:0f:b4:88:a4:9b")
+        PairedTV(host: "192.168.1.16", name: "Living room TV", mac: "00:11:22:33:44:55")
     }
 
     func save(_ tv: PairedTV?) {}

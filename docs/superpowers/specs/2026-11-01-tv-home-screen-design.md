@@ -53,7 +53,7 @@ Dimitar wants his TCL Google TV to feel like his own product: a calm, Apple-like
 
 ## Facts and constraints (checked 2026-10-29 to 11-01)
 
-- **TV:** TCL "Smart TV Pro" (G08), Google TV, Android 14 (SDK 34), MediaTek MT9689, 4K panel with a 1920×1080 UI. IP `192.168.8.16`, adb over the network on port 5555; the Mac is authorized.
+- **TV:** TCL "Smart TV Pro" (G08), Google TV, Android 14 (SDK 34), MediaTek MT9689, 4K panel with a 1920×1080 UI. IP `192.168.1.16`, adb over the network on port 5555; the Mac is authorized.
 - **Stock home screen:** `com.google.android.apps.tv.launcherx/.home.HomeActivity`. Live TV is `com.tcl.tv`.
 - **Installed apps** include:
   - YouTube `com.google.android.youtube.tv`

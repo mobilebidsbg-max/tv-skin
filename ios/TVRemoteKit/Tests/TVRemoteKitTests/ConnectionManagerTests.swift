@@ -4,7 +4,7 @@ import NIOSSL
 import XCTest
 @testable import TVRemoteKit
 
-private let knownTV = PairedTV(host: "192.168.8.16", name: "TCL Smart TV Pro", mac: "44:0f:b4:88:a4:9b")
+private let knownTV = PairedTV(host: "192.168.1.16", name: "TCL Smart TV Pro", mac: "00:11:22:33:44:55")
 
 /// `ConnectionManager` against fakes: nothing touches the network, and backoff sleeps are recorded instead of waited.
 /// Where a test must know the retry loop has finished, it waits for `connectTask` (internal) to end.
@@ -24,7 +24,10 @@ final class ConnectionManagerTests: XCTestCase {
         clock = FakeClock()
         clock.log = log
         let clock = clock!
-        return ConnectionManager(link: link, store: store, sleep: { await clock.sleep($0) }, now: { clock.now })
+        return ConnectionManager(
+            link: link, store: store, sleep: { await clock.sleep($0) }, now: { clock.now },
+            knownMACs: [knownTV.host: knownTV.mac!]
+        )
     }
 
     /// An active manager whose session to the known TV is up, and that session.
@@ -45,7 +48,7 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertEqual(manager.state, .connecting)
 
         await waitUntil { manager.state == .connected(tvOn: true) }
-        XCTAssertEqual(link.openedHosts, ["192.168.8.16"])
+        XCTAssertEqual(link.openedHosts, ["192.168.1.16"])
     }
 
     func testUnreachableRetriesWithBackoff() async {
@@ -374,8 +377,8 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertEqual(manager.state, .connecting)
 
         await waitUntil { manager.state == .connected(tvOn: true) }
-        XCTAssertEqual(link.waker.macs, ["44:0f:b4:88:a4:9b"])
-        XCTAssertEqual(link.waker.hosts, ["192.168.8.16"])
+        XCTAssertEqual(link.waker.macs, ["00:11:22:33:44:55"])
+        XCTAssertEqual(link.waker.hosts, ["192.168.1.16"])
         XCTAssertEqual(link.openedHosts.count, 2)
         // The wake gets 3 s before the next attempt; the cut-short backoff wait was the 1.
         XCTAssertEqual(clock.delays, [1, 3])
@@ -392,7 +395,7 @@ final class ConnectionManagerTests: XCTestCase {
         manager.power()
 
         await waitUntil { manager.state == .connected(tvOn: true) }
-        XCTAssertEqual(log.entries, ["sleep 1.0", "wake 44:0f:b4:88:a4:9b at 192.168.8.16", "sleep 3.0"])
+        XCTAssertEqual(log.entries, ["sleep 1.0", "wake 00:11:22:33:44:55 at 192.168.1.16", "sleep 3.0"])
     }
 
     func testPowerWhileConnectingWakesWithoutCancellingTheAttempt() async {
@@ -407,8 +410,8 @@ final class ConnectionManagerTests: XCTestCase {
         manager.power()
 
         // The wake goes out while the attempt is still held, and the attempt keeps running.
-        await waitUntil { self.link.waker.macs == ["44:0f:b4:88:a4:9b"] }
-        XCTAssertEqual(link.waker.hosts, ["192.168.8.16"])
+        await waitUntil { self.link.waker.macs == ["00:11:22:33:44:55"] }
+        XCTAssertEqual(link.waker.hosts, ["192.168.1.16"])
         XCTAssertEqual(link.openedHosts.count, 1)
         XCTAssertEqual(manager.connectTask, attempt)
         XCTAssertEqual(manager.state, .connecting)
@@ -422,7 +425,7 @@ final class ConnectionManagerTests: XCTestCase {
     }
 
     func testPowerWhileConnectingWithoutMACDoesNothing() async {
-        let manager = makeManager(tv: PairedTV(host: "192.168.8.20", name: "Bedroom", mac: nil))
+        let manager = makeManager(tv: PairedTV(host: "192.168.1.20", name: "Bedroom", mac: nil))
         link.openResults = [.failure(.unreachable)]
         link.holdsOpens = true
         manager.appBecameActive()
@@ -437,7 +440,7 @@ final class ConnectionManagerTests: XCTestCase {
     }
 
     func testPowerWhenUnreachableWithoutMACRetriesNow() async {
-        let manager = makeManager(tv: PairedTV(host: "192.168.8.20", name: "Bedroom", mac: nil))
+        let manager = makeManager(tv: PairedTV(host: "192.168.1.20", name: "Bedroom", mac: nil))
         link.openResults = [.failure(.unreachable)]
         clock.holds = true
         manager.appBecameActive()
@@ -449,7 +452,7 @@ final class ConnectionManagerTests: XCTestCase {
         await waitUntil { manager.state == .connected(tvOn: true) }
         XCTAssertEqual(link.waker.macs, [])
         XCTAssertEqual(clock.delays, [1])
-        XCTAssertEqual(link.openedHosts, ["192.168.8.20", "192.168.8.20"])
+        XCTAssertEqual(link.openedHosts, ["192.168.1.20", "192.168.1.20"])
     }
 
     // MARK: - Pairing
@@ -460,7 +463,7 @@ final class ConnectionManagerTests: XCTestCase {
         manager.appBecameActive()
         XCTAssertEqual(manager.state, .noTV)
 
-        await manager.startPairing(host: "192.168.8.16", name: "TCL Smart TV Pro")
+        await manager.startPairing(host: "192.168.1.16", name: "TCL Smart TV Pro")
         XCTAssertEqual(manager.state, .pairing(.enterCode))
 
         await manager.submitCode("A1B2C3")
@@ -470,22 +473,22 @@ final class ConnectionManagerTests: XCTestCase {
 
         await manager.submitCode("D4E5F6")
         XCTAssertEqual(link.pairingChannel.codes, ["A1B2C3", "D4E5F6"])
-        XCTAssertEqual(link.pairingHosts, ["192.168.8.16"])
+        XCTAssertEqual(link.pairingHosts, ["192.168.1.16"])
         XCTAssertEqual(manager.tv, knownTV)
         XCTAssertEqual(store.tv, knownTV)
 
         await waitUntil { manager.state == .connected(tvOn: true) }
-        XCTAssertEqual(link.openedHosts, ["192.168.8.16"])
+        XCTAssertEqual(link.openedHosts, ["192.168.1.16"])
     }
 
     func testPairingAnotherTVSavesItWithoutMAC() async {
         let manager = makeManager(tv: nil)
         manager.appBecameActive()
 
-        await manager.startPairing(host: "192.168.8.20", name: "Bedroom")
+        await manager.startPairing(host: "192.168.1.20", name: "Bedroom")
         await manager.submitCode("A1B2C3")
 
-        XCTAssertEqual(store.tv, PairedTV(host: "192.168.8.20", name: "Bedroom", mac: nil))
+        XCTAssertEqual(store.tv, PairedTV(host: "192.168.1.20", name: "Bedroom", mac: nil))
         await waitUntil { manager.state == .connected(tvOn: true) }
     }
 
@@ -494,7 +497,7 @@ final class ConnectionManagerTests: XCTestCase {
         link.pairingChannel.startError = .unreachable
         manager.appBecameActive()
 
-        await manager.startPairing(host: "192.168.8.16", name: "TCL Smart TV Pro")
+        await manager.startPairing(host: "192.168.1.16", name: "TCL Smart TV Pro")
 
         XCTAssertEqual(manager.state, .pairing(.failed("Can't reach the TV. Is it on and on the same Wi-Fi?")))
         XCTAssertTrue(link.pairingChannel.cancelled)
@@ -509,7 +512,7 @@ final class ConnectionManagerTests: XCTestCase {
         await waitForEnd(of: manager.connectTask)
         XCTAssertEqual(manager.state, .needsPairing)
 
-        await manager.startPairing(host: "192.168.8.16", name: "Living room")
+        await manager.startPairing(host: "192.168.1.16", name: "Living room")
         await manager.submitCode("A1B2C3")
 
         await waitUntil { manager.state == .connected(tvOn: true) }
@@ -528,16 +531,16 @@ final class ConnectionManagerTests: XCTestCase {
         clock.holds = false
 
         manager.discovered([
-            DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.8.30"),
-            DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.23"),
+            DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.1.30"),
+            DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.1.23"),
         ])
 
         XCTAssertEqual(manager.state, .connecting)
-        let moved = PairedTV(host: "192.168.8.23", name: knownTV.name, mac: knownTV.mac)
+        let moved = PairedTV(host: "192.168.1.23", name: knownTV.name, mac: knownTV.mac)
         XCTAssertEqual(manager.tv, moved)
         XCTAssertEqual(store.tv, moved, "the new address is saved, the MAC is kept")
         await waitUntil { manager.state == .connected(tvOn: true) }
-        XCTAssertEqual(link.openedHosts, ["192.168.8.16", "192.168.8.23"])
+        XCTAssertEqual(link.openedHosts, ["192.168.1.16", "192.168.1.23"])
     }
 
     func testDiscoveryLeavesTheTVAloneUnlessItsNameTurnsUpAtAnotherIPv4Address() async {
@@ -549,8 +552,8 @@ final class ConnectionManagerTests: XCTestCase {
         let retries = manager.connectTask
 
         manager.discovered([])
-        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.16")])
-        manager.discovered([DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.8.30")])
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.1.16")])
+        manager.discovered([DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.1.30")])
         manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "fe80::1%en0")])
 
         XCTAssertEqual(manager.tv, knownTV)
@@ -562,7 +565,7 @@ final class ConnectionManagerTests: XCTestCase {
     func testDiscoveryChangesNothingWhileConnected() async throws {
         let (manager, channel) = try await makeConnectedManager()
 
-        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.23")])
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.1.23")])
 
         XCTAssertEqual(store.tv, knownTV)
         XCTAssertFalse(channel.closed)
@@ -575,15 +578,15 @@ final class ConnectionManagerTests: XCTestCase {
         clock.holds = true
         manager.appBecameActive()
         await waitUntil { manager.state == .unreachable && self.clock.delays == [1] }
-        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.8.23")])
+        manager.discovered([DiscoveredTV(id: knownTV.name, name: knownTV.name, host: "192.168.1.23")])
         await waitUntil { manager.state == .unreachable && self.clock.delays == [1, 1] }
         clock.holds = false
 
         manager.power()
 
         await waitUntil { manager.state == .connected(tvOn: true) }
-        XCTAssertEqual(link.waker.macs, ["44:0f:b4:88:a4:9b"])
-        XCTAssertEqual(link.waker.hosts, ["192.168.8.23"])
+        XCTAssertEqual(link.waker.macs, ["00:11:22:33:44:55"])
+        XCTAssertEqual(link.waker.hosts, ["192.168.1.23"])
     }
 
     func testForgetTVClosesTheSessionAndClearsTheStore() async throws {

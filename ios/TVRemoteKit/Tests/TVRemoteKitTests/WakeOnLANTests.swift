@@ -4,35 +4,35 @@ import XCTest
 
 final class WakeOnLANTests: XCTestCase {
     func testWakePacket() throws {
-        let p = try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b")
+        let p = try WakeOnLAN.packet(mac: "00:11:22:33:44:55")
         XCTAssertEqual(p.count, 102)
         XCTAssertEqual(Array(p[0..<6]), Array(repeating: 0xFF, count: 6))
-        XCTAssertEqual(Array(p[96..<102]), [0x44, 0x0f, 0xb4, 0x88, 0xa4, 0x9b])
+        XCTAssertEqual(Array(p[96..<102]), [0x00, 0x11, 0x22, 0x33, 0x44, 0x55])
     }
 
-    func testWakePacketRejectsBadMac() { XCTAssertThrowsError(try WakeOnLAN.packet(mac: "44:0f:b4")) }
+    func testWakePacketRejectsBadMac() { XCTAssertThrowsError(try WakeOnLAN.packet(mac: "00:11:22")) }
 
     func testWakePacketRepeatsTheMacSixteenTimes() throws {
-        let p = try WakeOnLAN.packet(mac: "44-0F-B4-88-A4-9B")
+        let p = try WakeOnLAN.packet(mac: "00-11-22-33-44-55")
         for copy in 0..<16 {
             let start = 6 + copy * 6
-            XCTAssertEqual(Array(p[start..<start + 6]), [0x44, 0x0f, 0xb4, 0x88, 0xa4, 0x9b])
+            XCTAssertEqual(Array(p[start..<start + 6]), [0x00, 0x11, 0x22, 0x33, 0x44, 0x55])
         }
     }
 
     func testWakePacketRejectsNonHexMac() {
-        XCTAssertThrowsError(try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:zz"))
-        XCTAssertThrowsError(try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b:00"))
-        XCTAssertThrowsError(try WakeOnLAN.packet(mac: "440:f:b4:88:a4:9b"))
+        XCTAssertThrowsError(try WakeOnLAN.packet(mac: "00:11:22:33:44:zz"))
+        XCTAssertThrowsError(try WakeOnLAN.packet(mac: "00:11:22:33:44:55:00"))
+        XCTAssertThrowsError(try WakeOnLAN.packet(mac: "001:1:22:33:44:55"))
     }
 
     func testUnicastSendsThePacketToTheHost() async throws {
         let receiver = try UDPReceiver()
         defer { receiver.close() }
 
-        try await WakeOnLAN.send(mac: "44:0f:b4:88:a4:9b", to: "127.0.0.1", port: receiver.port)
+        try await WakeOnLAN.send(mac: "00:11:22:33:44:55", to: "127.0.0.1", port: receiver.port)
 
-        XCTAssertEqual(try receiver.receive(), try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b"))
+        XCTAssertEqual(try receiver.receive(), try WakeOnLAN.packet(mac: "00:11:22:33:44:55"))
     }
 
     /// The app's wake: the packet goes out three times, about 100 ms apart. (A made-up MAC, and no broadcast, so
@@ -67,7 +67,7 @@ final class WakeOnLANTests: XCTestCase {
 
     func testUnicastRejectsAHostThatIsNotAnIPv4Address() async {
         do {
-            try await WakeOnLAN.send(mac: "44:0f:b4:88:a4:9b", to: "tv.local")
+            try await WakeOnLAN.send(mac: "00:11:22:33:44:55", to: "tv.local")
             XCTFail("expected invalidHost")
         } catch {
             XCTAssertEqual(error as? WakeOnLANError, .invalidHost("tv.local"))

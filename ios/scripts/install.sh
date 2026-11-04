@@ -35,14 +35,19 @@ valid_team_id() {
     [[ "$1" =~ ^[A-Z0-9]{10}$ ]]
 }
 
-# Prints TV_TEAM_ID from .env at the repo root, if it is set there.
-team_id_from_env_file() {
+# Prints the value of variable $1 from .env at the repo root, if it is set there.
+value_from_env_file() {
     local file="$REPO_ROOT/.env" value
     [[ -f "$file" ]] || return 0
-    value="$(sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}TV_TEAM_ID[[:space:]]*=[[:space:]]*//p' "$file" | tail -n 1)"
+    value="$(sed -n "s/^[[:space:]]*\\(export[[:space:]]\\{1,\\}\\)\\{0,1\\}$1[[:space:]]*=[[:space:]]*//p" "$file" | tail -n 1)"
     value="${value%%#*}"
     value="$(printf '%s' "$value" | tr -d "\"'[:space:]")"
     printf '%s' "$value"
+}
+
+# Prints TV_TEAM_ID from .env at the repo root, if it is set there.
+team_id_from_env_file() {
+    value_from_env_file TV_TEAM_ID
 }
 
 # Prints the team IDs of the accounts signed in to Xcode (one per line, no duplicates).
@@ -208,6 +213,10 @@ main() {
         cut -f2 <<< "$devices" | sed 's/^/  /'
     fi
 
+    # Your TV's address and MAC (for Wake-on-LAN) come from the environment or .env, never from the source.
+    TV_KNOWN_HOST="${TV_HOST:-$(value_from_env_file TV_HOST)}"
+    TV_KNOWN_MAC="${TV_MAC:-$(value_from_env_file TV_MAC)}"
+
     echo "2/3 Generating the Xcode project"
     run xcodegen generate --spec ios/App/project.yml
 
@@ -218,7 +227,8 @@ main() {
         echo "Building for $name"
         if ! run xcodebuild -project ios/App/TVRemote.xcodeproj -scheme TVRemote -configuration Debug \
             -destination "id=$udid" -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
-            "DEVELOPMENT_TEAM=$TV_TEAM_ID" -derivedDataPath ios/App/build build </dev/null; then
+            "DEVELOPMENT_TEAM=$TV_TEAM_ID" "TV_KNOWN_HOST=$TV_KNOWN_HOST" "TV_KNOWN_MAC=$TV_KNOWN_MAC" \
+            -derivedDataPath ios/App/build build </dev/null; then
             echo "install.sh: the build for $name failed (see above)." >&2
             failed=$((failed + 1))
             continue

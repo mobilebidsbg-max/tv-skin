@@ -1,7 +1,7 @@
 # TV Skin on the TV: what was changed, and how to undo it
 
-TV: TCL Smart TV Pro, Google TV / Android 14, `192.168.8.16`.
-Connect first: `adb connect 192.168.8.16:5555`. Every command below is run from the Mac and starts with `adb -s 192.168.8.16:5555`.
+TV: TCL Smart TV Pro, Google TV / Android 14, `192.168.1.16`.
+Connect first: `adb connect 192.168.1.16:5555`. Every command below is run from the Mac and starts with `adb -s 192.168.1.16:5555`.
 
 ## Changes (2026-11-01)
 

@@ -505,7 +505,7 @@ Treat `DEFAULT_HIDDEN` as a rule (prefix `com.tcl.` minus `com.tcl.tv`), not a f
 
 - [ ] **Step 1: Ask Dimitar whether the TV is free.** Stop here until he says yes.
 - [ ] **Step 2: Install and open**
-  - `adb -s 192.168.8.16:5555 install -r tv/app/build/outputs/apk/debug/app-debug.apk`
+  - `adb -s 192.168.1.16:5555 install -r tv/app/build/outputs/apk/debug/app-debug.apk`
   - Open "TV Skin" from the Google TV app list (or `am start -W -n com.dzafirov.tvskin/.MainActivity`).
   - Expected: Status ok; TotalTime ≤ 1000 ms on the second (warm) start.
 - [ ] **Step 3: Measure**

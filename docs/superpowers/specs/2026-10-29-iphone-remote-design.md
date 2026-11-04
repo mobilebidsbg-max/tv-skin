@@ -31,7 +31,7 @@ Dimitar wants to drive his TV from the couch with his iPhone instead of the TCL 
 
 ## Constraints and facts (checked 2026-10-29)
 
-- TV: TCL "Smart TV Pro", Google TV on Android 14, at 192.168.8.16. Google's remote service (`com.google.android.tv.remote.service`) is installed. Ports 6467 (pairing) and 6466 (remote) are open.
+- TV: TCL "Smart TV Pro", Google TV on Android 14, at 192.168.1.16. Google's remote service (`com.google.android.tv.remote.service`) is installed. Ports 6467 (pairing) and 6466 (remote) are open.
 - Protocol: Android TV Remote v2, the one Google's own remote app uses. TLS with a client certificate, varint-length-prefixed protobuf messages. Pairing shows a 6-character code on the TV, and the client proves it with SHA-256 over both certificates' RSA modulus/exponent plus the code. Reference implementation: `tronikos/androidtvremote2` (Python), `.proto` files `polo.proto` and `remotemessage.proto`.
 - What the protocol can do: key presses (short, long-press start/end), app launch by link, volume state, power state, text into a focused text field (IME batch edit). It cannot move a mouse pointer.
 - Mac: Xcode 26.6 installed. No signing identity yet.

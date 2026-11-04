@@ -26,6 +26,10 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>TV Remote finds and controls your TV on this Wi-Fi.</string>
+	<key>TVKnownHost</key>
+	<string>$(TV_KNOWN_HOST)</string>
+	<key>TVKnownMAC</key>
+	<string>$(TV_KNOWN_MAC)</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

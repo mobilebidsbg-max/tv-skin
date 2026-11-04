@@ -83,6 +83,7 @@ public final class ConnectionManager {
     @ObservationIgnored private var pairing: PairingChannel?
     /// The TV being paired; saved as `tv` once pairing succeeds.
     @ObservationIgnored private var pairingTV: PairedTV?
+    @ObservationIgnored private let knownMACs: [String: String]
     /// Power sent Wake-on-LAN while connecting; if the attempt under way fails, the next wait is `wakeDelay`.
     @ObservationIgnored private var wokeWhileConnecting = false
     /// When the open session started, and the failures counted before it.
@@ -91,12 +92,15 @@ public final class ConnectionManager {
     /// - Parameters:
     ///   - sleep: waits the given number of seconds; tests pass a fake.
     ///   - now: the time in seconds, only ever compared with itself; tests pass a fake.
+    ///   - knownMACs: MAC addresses of TVs known in advance, by IP address, saved with the TV when pairing.
     public init(
         link: TVLinking,
         store: PairedTVStore,
         sleep: @escaping (TimeInterval) async -> Void = { try? await Task.sleep(for: .seconds($0)) },
-        now: @escaping @MainActor () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        now: @escaping @MainActor () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        knownMACs: [String: String] = PairedTV.knownMACs
     ) {
+        self.knownMACs = knownMACs
         self.link = link
         self.store = store
         wait = sleep
@@ -213,7 +217,7 @@ public final class ConnectionManager {
         closeChannel()
         let session = link.pairing(host: host)
         pairing = session
-        pairingTV = PairedTV(host: host, name: name, mac: PairedTV.knownMACs[host])
+        pairingTV = PairedTV(host: host, name: name, mac: knownMACs[host])
         state = .pairing(.connecting)
         do {
             try await session.start()

@@ -38,3 +38,6 @@ targets:
         NSLocalNetworkUsageDescription: TV Remote finds and controls your TV on this Wi-Fi.
         NSBonjourServices:
           - _androidtvremote2._tcp
+        # Your TV, for Wake-on-LAN. install.sh passes TV_HOST / TV_MAC from .env; empty means no wake.
+        TVKnownHost: $(TV_KNOWN_HOST)
+        TVKnownMAC: $(TV_KNOWN_MAC)

@@ -7,7 +7,7 @@ Dimitar's own Google TV experience: an iPhone remote now, a custom home screen (
 - `docs/design/` — HTML mockups (home screen v3, remote).
 - `docs/ACCEPTANCE.md` — live acceptance checklist for the iPhone app.
 
-TV: TCL "Smart TV Pro", Google TV / Android 14, `192.168.8.16` on the home Wi-Fi.
+TV: TCL "Smart TV Pro", Google TV / Android 14, `192.168.1.16` on the home Wi-Fi.
 
 ## iPhone app — install
 
@@ -42,12 +42,12 @@ A free Apple ID signs the app for 7 days. The Mac renews it by itself:
 ```sh
 cd ios/TVRemoteKit
 swift run tvremote discover                                  # list TVs on the network
-swift run tvremote pair --host 192.168.8.16                  # code appears on the TV, type it here
-swift run tvremote key --host 192.168.8.16 HOME              # press a key (add --long to hold it)
-swift run tvremote app --host 192.168.8.16 https://www.youtube.com
-swift run tvremote text --host 192.168.8.16 "hello"          # type into the focused field on the TV
-swift run tvremote watch --host 192.168.8.16 --seconds 30    # print what the TV reports
-swift run tvremote wake --mac 44:0f:b4:88:a4:9b              # Wake-on-LAN
+swift run tvremote pair --host 192.168.1.16                  # code appears on the TV, type it here
+swift run tvremote key --host 192.168.1.16 HOME              # press a key (add --long to hold it)
+swift run tvremote app --host 192.168.1.16 https://www.youtube.com
+swift run tvremote text --host 192.168.1.16 "hello"          # type into the focused field on the TV
+swift run tvremote watch --host 192.168.1.16 --seconds 30    # print what the TV reports
+swift run tvremote wake --mac 00:11:22:33:44:55              # Wake-on-LAN
 ```
 
 `swift run tvremote help` lists every command and key name.

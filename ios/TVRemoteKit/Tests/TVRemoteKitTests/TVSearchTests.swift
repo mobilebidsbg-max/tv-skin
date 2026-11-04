@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import TVRemoteKit
 
-private let livingRoom = DiscoveredTV(id: "Living room", name: "Living room", host: "192.168.8.16")
+private let livingRoom = DiscoveredTV(id: "Living room", name: "Living room", host: "192.168.1.16")
 
 /// `TVSearch` against scripted finders, with a short restart interval and real waits.
 @MainActor

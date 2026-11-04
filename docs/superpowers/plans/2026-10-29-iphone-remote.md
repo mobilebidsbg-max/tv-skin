@@ -17,7 +17,7 @@
 - Colors: background `#000000`; surfaces `#0A0A0A` / `#141414` / `#1A1A1A`; hairline `#222222`; text `#F2F2F2`, secondary `#8A8A8E`; idle dot `#2C2C2E`; accent (Claude Code orange) `#D97757`. Orange appears only on touch feedback, play/pause, power and the connection dot.
 - Protocol constants: pairing port `6467`, remote port `6466`, Bonjour type `_androidtvremote2._tcp`, pairing `service_name` `"atvremote"`, code = 6 hex chars, requested features `615` (PING 1 | KEY 2 | IME 4 | POWER 32 | VOLUME 64 | APP_LINK 512). Every message is a protobuf payload prefixed by its length as a varint.
 - Each device generates its own RSA-2048 client certificate (CN `atvremote`) on first launch and keeps it (iOS: Keychain generic password, service `com.dzafirov.tvskin.remote`, account `client-identity`; CLI: `ios/TVRemoteKit/.tvremote/`).
-- TV under test: `192.168.8.16`, MAC `44:0f:b4:88:a4:9b`. **Live steps take over the TV: ask Dimitar before running them.** Read pairing codes from `adb -s 192.168.8.16:5555 exec-out screencap -p > /tmp/tv.png`.
+- TV under test: `192.168.1.16`, MAC `00:11:22:33:44:55`. **Live steps take over the TV: ask Dimitar before running them.** Read pairing codes from `adb -s 192.168.1.16:5555 exec-out screencap -p > /tmp/tv.png`.
 - Apps installed on the TV (2026-10-29): YouTube, YouTube Music, Netflix, Prime Video, Apple TV, Disney+. Not installed: Spotify, HBO Max, Twitch. Shortcuts use only installed apps.
 - UI copy is English. No secrets in git (`.env` is ignored).
 - Every commit: `git -c user.name="mobilebidsbg-max" -c user.email="mobilebidsbg@gmail.com" commit` with message ending `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Commit with explicit paths.
@@ -146,7 +146,7 @@ func testFileIdentityStoreRoundTrip() throws { /* temp dir → loadOrCreate twic
 - [ ] **Step 3: Implement** `TVLinkError`, `TLSChannel`, `PairingSession`.
 - [ ] **Step 4: Run** `swift test`. Expected: all pass.
 - [ ] **Step 5: Implement `tvremote pair --host <ip> [--name <client name>] [--code-file <path>]`** in `main.swift` (plain `CommandLine.arguments` parsing, no extra dependency). Identity comes from `FileIdentityStore(directory: <package dir>/.tvremote)`. After `start()` it prints `CODE_ON_TV` and reads the code from `--code-file` (polls every 0.5 s, up to 120 s) or else stdin. It prints `PAIRED` on success, or the error name and exit code 1.
-- [ ] **Step 6: Live check (ask Dimitar first; the TV shows a pairing dialog):** run `swift run tvremote pair --host 192.168.8.16 --name "tv-skin Mac" --code-file /tmp/tvcode.txt` in the background. When it prints `CODE_ON_TV`, take `adb -s 192.168.8.16:5555 exec-out screencap -p > /tmp/tv.png`, read the 6-character code from the image, and `echo <code> > /tmp/tvcode.txt`. Expected output: `PAIRED`. Then repeat with a deliberately wrong code (flip the last character). Expected: `badCode` or `codeMismatch` reported without hanging, and the TV dialog is dismissed or stays recoverable.
+- [ ] **Step 6: Live check (ask Dimitar first; the TV shows a pairing dialog):** run `swift run tvremote pair --host 192.168.1.16 --name "tv-skin Mac" --code-file /tmp/tvcode.txt` in the background. When it prints `CODE_ON_TV`, take `adb -s 192.168.1.16:5555 exec-out screencap -p > /tmp/tv.png`, read the 6-character code from the image, and `echo <code> > /tmp/tvcode.txt`. Expected output: `PAIRED`. Then repeat with a deliberately wrong code (flip the last character). Expected: `badCode` or `codeMismatch` reported without hanging, and the TV dialog is dismissed or stays recoverable.
 - [ ] **Step 7: Commit** "TVRemoteKit: TLS channel, pairing session and tvremote pair".
 
 ### Task 4: Remote session, key codes, app shortcuts, `tvremote` commands (live)
@@ -180,16 +180,16 @@ func testTextBytes() { XCTAssertEqual(RemoteOutbound.text("hello", imeCounter: 4
 func testParsePing() throws { XCTAssertEqual(try RemoteInbound.parse(Array(hex: "4204082a1000")), .ping(val1: 42)) }
 func testParseStart() throws { XCTAssertEqual(try RemoteInbound.parse(Array(hex: "c202020801")), .start(isOn: true)) }
 func testParseVolume() throws { XCTAssertEqual(try RemoteInbound.parse(Array(hex: "92030b1a0354434c3064380c4000")), .volume(level: 12, max: 100, muted: false)) }
-func testWakePacket() throws { let p = try WakeOnLAN.packet(mac: "44:0f:b4:88:a4:9b"); XCTAssertEqual(p.count, 102); XCTAssertEqual(Array(p[0..<6]), Array(repeating: 0xFF, count: 6)); XCTAssertEqual(Array(p[96..<102]), [0x44, 0x0f, 0xb4, 0x88, 0xa4, 0x9b]) }
-func testWakePacketRejectsBadMac() { XCTAssertThrowsError(try WakeOnLAN.packet(mac: "44:0f:b4")) }
+func testWakePacket() throws { let p = try WakeOnLAN.packet(mac: "00:11:22:33:44:55"); XCTAssertEqual(p.count, 102); XCTAssertEqual(Array(p[0..<6]), Array(repeating: 0xFF, count: 6)); XCTAssertEqual(Array(p[96..<102]), [0x00, 0x11, 0x22, 0x33, 0x44, 0x55]) }
+func testWakePacketRejectsBadMac() { XCTAssertThrowsError(try WakeOnLAN.packet(mac: "00:11:22")) }
 ```
 - [ ] **Step 2: Run** `swift test --filter "RemoteMessageTests|WakeOnLANTests"`. Expected: fail to compile.
 - [ ] **Step 3: Implement** the files above.
 - [ ] **Step 4: Run** `swift test`. Expected: all pass.
 - [ ] **Step 5: Add CLI commands:** `tvremote key --host H <NAME> [--long]`, `tvremote app --host H <url>`, `tvremote text --host H <text>`, `tvremote watch --host H [--seconds N]` (prints each `RemoteEvent`), `tvremote wake --mac M`.
 - [ ] **Step 6: Live check (ask Dimitar first):**
-  - `swift run tvremote watch --host 192.168.8.16 --seconds 20`. Expected: `ready(isOn: true)` and a `volume(...)` line, and it stays open across at least 3 server pings.
-  - `tvremote key HOME`, then `adb -s 192.168.8.16:5555 shell dumpsys activity activities | grep -m1 topResumedActivity`. Expected: `com.google.android.apps.tv.launcherx`. Then `tvremote key DOWN`, `RIGHT`, `OK`, and confirm the focus moved with a screenshot.
+  - `swift run tvremote watch --host 192.168.1.16 --seconds 20`. Expected: `ready(isOn: true)` and a `volume(...)` line, and it stays open across at least 3 server pings.
+  - `tvremote key HOME`, then `adb -s 192.168.1.16:5555 shell dumpsys activity activities | grep -m1 topResumedActivity`. Expected: `com.google.android.apps.tv.launcherx`. Then `tvremote key DOWN`, `RIGHT`, `OK`, and confirm the focus moved with a screenshot.
   - `tvremote key OK --long`. Expected: a long-press menu on the focused tile.
 - [ ] **Step 7: Decide the seek keys and app links on the real TV:**
   - Start a YouTube video (`tvremote app "https://www.youtube.com/watch?v=aqz-KE-bpKQ"`), then try `fastForward`, `skipForward` and `dpadRight` one at a time. Read the position each time from `adb shell dumpsys media_session | grep -m1 "position="`. Set `Seek.forward/backward` to the pair that jumps about 10 s. If none does, use `dpadRight/dpadLeft` and note it.
@@ -246,7 +246,7 @@ func testBurstIsRateLimited()           // 2000pt right within 0.5s → at most 
   - `protocol PairingChannel: AnyObject { func start() async throws; func finish(code: String) async throws; func cancel() }` (`PairingSession` conforms).
   - `protocol TVLinking { func openRemote(host: String) async throws -> RemoteChannel; func pairing(host: String) -> PairingChannel; func wake(mac: String) async throws }`, `struct LiveLink: TVLinking { init(identityStore: IdentityStore, clientName: String) }`.
   - `@MainActor @Observable final class ConnectionManager { enum State: Equatable { case noTV, connecting, connected(tvOn: Bool), unreachable, needsPairing, pairing(PairingStep), localNetworkDenied }; enum PairingStep: Equatable { case connecting, enterCode, checking, wrongCode, failed(String) }; private(set) var state: State; private(set) var tv: PairedTV?; private(set) var volume: VolumeInfo?; private(set) var canType: Bool; init(link: TVLinking, store: PairedTVStore, sleep: @escaping (TimeInterval) async -> Void = { try? await Task.sleep(for: .seconds($0)) }); func appBecameActive(); func appWentBackground(); func perform(_ command: RemoteCommand); func press(_ key: KeyCode); func open(_ app: AppShortcut); func type(_ text: String); func power(); func startPairing(host: String, name: String) async; func submitCode(_ code: String) async; func forgetTV(); func localNetworkDenied() }`
-- Behavior: reconnect delays `[1, 2, 4, 8, 10, 10, …]` seconds while active. A `.notPaired` result stops retries and sets `.needsPairing`. `appWentBackground` closes the channel and cancels retries. `appBecameActive` starts at most one connect (a second call while connecting is ignored). `power()` sends `.power` when connected; when unreachable with a known MAC it calls `wake(mac:)` and then reconnects after 3 s. `submitCode` with `.badCode`/`codeMismatch` sets `.pairing(.wrongCode)` and keeps the session for retry. On success it saves the TV with `mac = "44:0f:b4:88:a4:9b"` when `host == "192.168.8.16"` (known TV) and connects.
+- Behavior: reconnect delays `[1, 2, 4, 8, 10, 10, …]` seconds while active. A `.notPaired` result stops retries and sets `.needsPairing`. `appWentBackground` closes the channel and cancels retries. `appBecameActive` starts at most one connect (a second call while connecting is ignored). `power()` sends `.power` when connected; when unreachable with a known MAC it calls `wake(mac:)` and then reconnects after 3 s. `submitCode` with `.badCode`/`codeMismatch` sets `.pairing(.wrongCode)` and keeps the session for retry. On success it saves the TV with `mac = "00:11:22:33:44:55"` when `host == "192.168.1.16"` (known TV) and connects.
 
 - [ ] **Step 1: Write failing tests:**
 
@@ -255,7 +255,7 @@ func testConnectsAndReportsTvOn()                       // channel emits .ready(
 func testUnreachableRetriesWithBackoff()                // openRemote throws .unreachable ×2 then succeeds → recorded sleeps == [1, 2], final state .connected(tvOn: true)
 func testNotPairedGoesToNeedsPairingWithoutRetry()      // throws .notPaired → state .needsPairing, openRemote called once
 func testBackgroundThenActiveReconnectsExactlyOnce()    // connected → appWentBackground (channel.closed == true) → appBecameActive ×2 → openRemote count +1
-func testPowerWhenUnreachableWakesAndReconnects()       // state .unreachable, tv.mac set → power() → waker got "44:0f:b4:88:a4:9b", then openRemote called again
+func testPowerWhenUnreachableWakesAndReconnects()       // state .unreachable, tv.mac set → power() → waker got "00:11:22:33:44:55", then openRemote called again
 func testBadCodeKeepsPairingOpen()                      // pairing.finish throws .badCode → state .pairing(.wrongCode); second submitCode succeeds → .connected
 func testLocalNetworkDeniedStopsRetrying()              // localNetworkDenied() during retries → state .localNetworkDenied, no further openRemote
 func testPerformMapsCommandsToKeys()                    // perform(.longStart(.dpadCenter)) → channel got (dpadCenter, startLong)
@@ -300,7 +300,7 @@ func testTypeWithoutTextFieldDoesNotCrash()             // channel.type throws .
   - Local network denied: "TV Remote needs Local Network access to find your TV." + button "Open Settings" (`UIApplication.openSettingsURLString`).
   - Unreachable during pairing: "Can't reach the TV. Is it on and on the same Wi-Fi?"
 
-- [ ] **Step 1: Add `tvremote discover [--seconds 5]`** using `TVDiscovery`. Live check: `swift run tvremote discover`. Expected: a line with `192.168.8.16`.
+- [ ] **Step 1: Add `tvremote discover [--seconds 5]`** using `TVDiscovery`. Live check: `swift run tvremote discover`. Expected: a line with `192.168.1.16`.
 - [ ] **Step 2: Implement the views** and wire `RootView`.
 - [ ] **Step 3: Build** (same command as Task 7 Step 5). Expected: `** BUILD SUCCEEDED **`.
 - [ ] **Step 4: Commit** "Discovery and pairing screens".

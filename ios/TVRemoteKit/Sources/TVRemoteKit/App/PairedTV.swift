@@ -14,8 +14,18 @@ public struct PairedTV: Codable, Equatable {
         self.mac = mac
     }
 
-    /// MAC addresses of TVs known in advance, by IP address.
-    static let knownMACs = ["192.168.8.16": "44:0f:b4:88:a4:9b"]
+    /// MAC addresses of TVs known in advance, by IP address. Comes from the app's Info.plist (`TVKnownHost` +
+    /// `TVKnownMAC`), which `ios/scripts/install.sh` fills from `TV_HOST` / `TV_MAC` in `.env`, so no address is
+    /// kept in the source. Empty when they are not set: pairing still works, only Wake-on-LAN is off.
+    public static let knownMACs = knownMACs(from: Bundle.main.infoDictionary)
+
+    /// `[host: mac]` from Info.plist values; empty unless both are set.
+    static func knownMACs(from info: [String: Any]?) -> [String: String] {
+        let host = (info?["TVKnownHost"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        let mac = (info?["TVKnownMAC"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        guard !host.isEmpty, !mac.isEmpty else { return [:] }
+        return [host: mac]
+    }
 
     /// The address this TV has moved to (its DHCP lease changed), if `found` lists a TV with its name at another
     /// IPv4 address; nil otherwise. Bonjour keeps service names unique on a network, so the name identifies the TV.

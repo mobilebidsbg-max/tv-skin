@@ -3,7 +3,7 @@ import Foundation
 public enum WakeOnLANError: Error, Equatable {
     /// Not six hex bytes separated by `:` or `-`.
     case invalidMAC(String)
-    /// Not an IPv4 address such as `192.168.8.16`.
+    /// Not an IPv4 address such as `192.168.1.16`.
     case invalidHost(String)
     /// The UDP socket failed; carries `errno`.
     case socket(Int32)
@@ -14,7 +14,7 @@ public enum WakeOnLAN {
     static let port: UInt16 = 9
 
     /// The magic packet: six `0xFF` bytes, then the MAC address 16 times (102 bytes).
-    /// - Parameter mac: e.g. `44:0f:b4:88:a4:9b` or `44-0F-B4-88-A4-9B`.
+    /// - Parameter mac: e.g. `00:11:22:33:44:55` or `00-11-22-33-44-55`.
     public static func packet(mac: String) throws -> [UInt8] {
         let parts = mac.replacingOccurrences(of: "-", with: ":").split(separator: ":", omittingEmptySubsequences: false)
         let bytes = parts.compactMap { $0.count == 2 ? UInt8($0, radix: 16) : nil }

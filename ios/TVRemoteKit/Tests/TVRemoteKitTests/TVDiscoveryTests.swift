@@ -13,8 +13,8 @@ final class TVDiscoveryTests: XCTestCase {
     }
 
     func testHostStringOfAnIPv4Address() throws {
-        let address = try XCTUnwrap(IPv4Address("192.168.8.16"))
-        XCTAssertEqual(TVDiscovery.hostString(.ipv4(address)), "192.168.8.16")
+        let address = try XCTUnwrap(IPv4Address("192.168.1.16"))
+        XCTAssertEqual(TVDiscovery.hostString(.ipv4(address)), "192.168.1.16")
     }
 
     func testHostStringOfAName() {
@@ -23,13 +23,13 @@ final class TVDiscoveryTests: XCTestCase {
 
     func testListHoldsResolvedTVsSortedByName() {
         let list = TVDiscovery.list(from: [
-            "Smart TV Pro": "192.168.8.16",
-            "Bedroom": "192.168.8.20",
+            "Smart TV Pro": "192.168.1.16",
+            "Bedroom": "192.168.1.20",
             "Pending": nil,
         ])
         XCTAssertEqual(list, [
-            DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.8.20"),
-            DiscoveredTV(id: "Smart TV Pro", name: "Smart TV Pro", host: "192.168.8.16"),
+            DiscoveredTV(id: "Bedroom", name: "Bedroom", host: "192.168.1.20"),
+            DiscoveredTV(id: "Smart TV Pro", name: "Smart TV Pro", host: "192.168.1.16"),
         ])
     }
 
@@ -42,7 +42,7 @@ final class TVDiscoveryTests: XCTestCase {
     }
 
     func testAnIPv4AddressIsAcceptedOnEveryAttempt() throws {
-        let host = NWEndpoint.Host.ipv4(try XCTUnwrap(IPv4Address("192.168.8.16")))
+        let host = NWEndpoint.Host.ipv4(try XCTUnwrap(IPv4Address("192.168.1.16")))
         for attempt in 0..<TVDiscovery.maxAttempts {
             XCTAssertTrue(TVDiscovery.accepts(host, attempt: attempt), "attempt \(attempt)")
         }
